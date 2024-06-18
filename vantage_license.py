@@ -191,14 +191,14 @@ if  st.session_state["token"] != "":
     df_totals_tenant = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
     df_totals_tenant.columns = ["Tenant", "Type", "Pages Used", "Page Limit", "Pages Left"]
     df_totals_tenant = df_totals_tenant.sort_values(by=["Tenant",'Type'], ascending=True)
-    st.header("Skill Type License by Tenant")
+    st.header("Licenses by Skill")
     tcol1, tcol2 = st.columns(2)
     with tcol1:
         st.dataframe(df_totals_tenant, hide_index=True)
     with tcol2:
         st.bar_chart(df_totals_tenant, x=("Type"), y=("Pages Used","Pages Left"))
 
-    st.header("Licenses by Skill")
+    st.header("Licenses by Tenant")
     df_totals = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
     df_totals.columns = ["Skill", "Type", "Pages Used", "Page Limit", "Pages Left"]
     df_totals = df_totals.sort_values(by="Pages Used", ascending=True)

@@ -75,6 +75,7 @@ def read_data_lic(json_array):
     serial_numbers = []
     expire_dates = []
     skill_names = []
+    skill_types = []
     skill_counters = []
     skill_limits = []
     skill_remains = []
@@ -87,10 +88,16 @@ def read_data_lic(json_array):
         expire_date = data['data']['expireDate']
         
         for skill in data['data']['skills']:
+            if skill['name'] == "General":
+                skill_type = "Core Cognitive" 
+            else: 
+                skill_type = "Production Skill"
+
             tenant_names.append(tenant_name)
             serial_numbers.append(serial_number)
             expire_dates.append(expire_date)
             skill_names.append(skill['name'])
+            skill_types.append(skill_type)
             skill_counters.append(skill['counter'])
             skill_limits.append(skill['limit'])
             skill_remains.append(skill['limit'] - skill['counter'])
@@ -100,6 +107,7 @@ def read_data_lic(json_array):
         'serialNumber': serial_numbers,
         'expireDate': expire_dates,
         'skills_name': skill_names,
+        'skills_type': skill_types,
         'skills_counter': skill_counters,
         'skills_limit': skill_limits,
         'skills_remain': skill_remains
@@ -172,7 +180,7 @@ if  st.session_state["token"] != "":
     st.write("Author: marcelo.araujo@abbyy.com")
     
     
-    st.header("Connecting to Tenants")
+    st.header("Connecting to Vantage Tenants")
     tenants = st.secrets["VANTAGE_TENANTS"]    
     lic_data, usr_data = get_data(tenants)
     lic_df = read_data_lic(lic_data)
@@ -180,28 +188,33 @@ if  st.session_state["token"] != "":
     st.write("")
 
 
-    df_totals_tenant = lic_df.groupby(["tenant_name",'skills_name']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
-    df_totals_tenant = df_totals_tenant.sort_values(by=["tenant_name",'skills_name'], ascending=True)
-    st.header("Licenses by Tenant")
+    df_totals_tenant = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
+    df_totals_tenant.columns = ["Tenant", "Type", "Pages Used", "Page Limit", "Pages Left"]
+    df_totals_tenant = df_totals_tenant.sort_values(by=["Tenant",'Type'], ascending=True)
+    st.header("Skill Type License by Tenant")
     tcol1, tcol2 = st.columns(2)
     with tcol1:
         st.dataframe(df_totals_tenant, hide_index=True)
-
     with tcol2:
-        st.bar_chart(df_totals_tenant, x=("tenant_name"), y=("skills_counter","skills_remain"))
+        st.bar_chart(df_totals_tenant, x=("Type"), y=("Pages Used","Pages Left"))
 
     st.header("Licenses by Skill")
-    df_totals = lic_df.groupby("skills_name").agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
-    df_totals = df_totals.sort_values(by='skills_remain', ascending=True)
+    df_totals = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
+    df_totals.columns = ["Skill", "Type", "Pages Used", "Page Limit", "Pages Left"]
+    df_totals = df_totals.sort_values(by="Pages Used", ascending=True)
     vcol1, vcol2 = st.columns(2)
     with vcol1:
         st.dataframe(df_totals, hide_index=True)
     with vcol2:
-        st.bar_chart(df_totals, x="skills_name", y=("skills_counter","skills_remain"))
+        st.bar_chart(df_totals, x="Skill", y=("Pages Used","Pages Left"))
 
     st.header("Licenses database")
-    styled_df = lic_df.style.applymap(lambda x: highlight_less_than(x,1000),subset=['skills_remain'])
-    st.dataframe(styled_df, hide_index=True,use_container_width=True)
+   
+    lic_df.columns = ["Tenant", "Serial", "Expire Date", "Skill", "Type", "Pages Used", "Page Limit", "Pages Left"]
+    styled_df = lic_df.style.applymap(lambda x: highlight_less_than(x,1000),subset=["Pages Left"])
+    st.dataframe(styled_df, hide_index=True, use_container_width=True)
+    st.markdown('<span style="color: red;">(*) Less than 1000 pages</span>',unsafe_allow_html=True)
+    st.header("")
 
     df_user_tenant = usr_df.drop_duplicates(subset='email')
     df_user_tenant = df_user_tenant.groupby("tenant")['email'].count().reset_index()
@@ -223,7 +236,7 @@ if  st.session_state["token"] != "":
     with rcol1:
         st.dataframe(df_roles_tenant, hide_index=True)
     with rcol2:
-        st.bar_chart(df_roles_tenant, x="tenant", y="count")
+        st.bar_chart(df_roles_tenant, x="role", y="count")
 
     st.header("Users & Roles database")
     st.dataframe(usr_df, hide_index=True,use_container_width=True)

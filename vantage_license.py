@@ -1,9 +1,5 @@
 
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
-import sqlite3
 import streamlit as st
 import random
 import time
@@ -229,7 +225,7 @@ if  st.session_state["token"] != "":
     with rcol2:
         st.bar_chart(df_roles_tenant, x="tenant", y="count")
 
-    st.header("Users database")
+    st.header("Users & Roles database")
     st.dataframe(usr_df, hide_index=True,use_container_width=True)
     
 

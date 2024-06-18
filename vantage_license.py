@@ -239,7 +239,7 @@ if  st.session_state["token"] != "":
     with rcol2:
         st.bar_chart(df_roles_tenant, x="Role", y="Users Count")
 
-    st.header("Users & Roles database")
+    st.header("Users database")
     usr_df.columns = ["Tenant", "User Name", "E-mail", "Role"]
     st.dataframe(usr_df, hide_index=True,use_container_width=True)
     

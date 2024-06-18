@@ -218,10 +218,11 @@ if  st.session_state["token"] != "":
 
     df_user_tenant = usr_df.drop_duplicates(subset='email')
     df_user_tenant = df_user_tenant.groupby("tenant")['email'].count().reset_index()
-    df_user_tenant.columns = ["tenant", "count"]
+    df_user_tenant.columns = ["Tenant", "Users Count"]
     
     df_roles_tenant = usr_df.groupby(["tenant", "role"]).agg({'email': 'count'}).reset_index().rename(columns={"email":"count"})
-    
+    df_roles_tenant.columns = ["Tenant", "Role" ,"Users Count"]
+
     #df_totals_tenant = df_totals_tenant.sort_values(by=["tenant_name",'skills_name'], ascending=True)
   
     st.header("Users by Tenant")
@@ -229,16 +230,17 @@ if  st.session_state["token"] != "":
     with ucol1:
         st.dataframe(df_user_tenant, hide_index=True)
     with ucol2:
-        st.bar_chart(df_user_tenant, x="tenant", y="count")
+        st.bar_chart(df_user_tenant, x="Tenant", y="Users Count")
 
     st.header("Users by Roles by Tenant")
     rcol1, rcol2 = st.columns(2)
     with rcol1:
         st.dataframe(df_roles_tenant, hide_index=True)
     with rcol2:
-        st.bar_chart(df_roles_tenant, x="role", y="count")
+        st.bar_chart(df_roles_tenant, x="Role", y="Users Count")
 
     st.header("Users & Roles database")
+    usr_df.columns = ["Tenant", "User Name", "E-mail", "Role"]
     st.dataframe(usr_df, hide_index=True,use_container_width=True)
     
 

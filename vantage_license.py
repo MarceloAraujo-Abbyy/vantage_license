@@ -218,7 +218,7 @@ if  st.session_state["token"] != "":
     with ucol2:
         st.bar_chart(df_user_tenant, x="tenant", y="count")
 
-    st.header("Roles by Tenant")
+    st.header("Users by Roles by Tenant")
     rcol1, rcol2 = st.columns(2)
     with rcol1:
         st.dataframe(df_roles_tenant, hide_index=True)

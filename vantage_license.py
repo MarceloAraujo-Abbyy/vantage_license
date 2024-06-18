@@ -213,7 +213,7 @@ if  st.session_state["token"] != "":
     lic_df.columns = ["Tenant", "Serial", "Expire Date", "Skill", "Type", "Pages Used", "Page Limit", "Pages Left"]
     styled_df = lic_df.style.applymap(lambda x: highlight_less_than(x,1000),subset=["Pages Left"])
     st.dataframe(styled_df, hide_index=True, use_container_width=True)
-    st.markdown('<span style="color: red;">(*) Less than 1000 pages</span>',unsafe_allow_html=True)
+    st.markdown('<span style="color: red;">(*) Less than 1000 pages left</span>',unsafe_allow_html=True)
     st.header("")
 
     df_user_tenant = usr_df.drop_duplicates(subset='email')

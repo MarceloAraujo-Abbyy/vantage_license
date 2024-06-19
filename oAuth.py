@@ -61,9 +61,6 @@ if 'code' not in st.query_params:
 
 else:
 
-    if 'verifier' not in st.session_state:
-        st.session_state["verifier"] = controller.get('verifier')
-
     #st.write("authorization_response_code: " + st.query_params['code']) 
     #st.write("authorization_response_scope: " + st.query_params['scope']) 
     #st.write("authorization_response_state: " + st.query_params['state']) 
@@ -72,7 +69,7 @@ else:
     
     data = {
 
-        'code_verifier':st.session_state["verifier"],
+        'code_verifier':controller.get('verifier'),
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,

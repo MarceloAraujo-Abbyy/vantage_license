@@ -61,12 +61,14 @@ if 'code' not in st.query_params:
 
 else:
     verifier = controller.get('streamlit-verifier')
+    """
     st.write("authorization_response_code: " + st.query_params['code']) 
     st.write("authorization_response_scope: " + st.query_params['scope']) 
     st.write("authorization_response_state: " + st.query_params['state']) 
     st.write("verifier: " + verifier )
     st.write("authorization_response_session_state: " + st.query_params['session_state']) 
-
+    """
+    
     data = {
 
         'code_verifier': verifier,

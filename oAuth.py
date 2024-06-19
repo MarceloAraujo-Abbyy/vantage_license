@@ -43,6 +43,7 @@ if 'code' not in st.query_params:
     if 'verifier' not in st.session_state:
         st.session_state["verifier"] =  string_num_generator(56)
         controller.set('verifier', st.session_state["verifier"])
+        st.write("novo verifier" + controller.get('verifier'))
     
     state = string_num_generator(20)
     challenger = pkce_challenge_from_verifier(st.session_state["verifier"])

@@ -60,9 +60,9 @@ else:
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,
-        'code': authorization_response_code,
+        'code': st.query_params['code'],
         'redirect_uri': redirect_uri,
-        'scope': redirect_uri
+        'scope':  st.query_params['scope']
     }
 
     st.write(data)

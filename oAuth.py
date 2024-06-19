@@ -41,15 +41,13 @@ product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
 
 if 'code' not in st.query_params:
 
-    controller.remove('streamlit-verifier')
-
     if 'verifier' not in st.session_state:
         st.session_state.verifier =  string_num_generator(56)
-        controller.set('streamlit-verifier', st.session_state.verifier)
+#        controller.set('streamlit-verifier', st.session_state.verifier)
     
     state = string_num_generator(20)
     challenger = pkce_challenge_from_verifier(st.session_state.verifier)
-    verifier = controller.get('streamlit-verifier')
+    verifier =  st.session_state.verifier
 
     st.write("state: " + state)
     st.write("verifier: " + verifier )
@@ -57,7 +55,7 @@ if 'code' not in st.query_params:
 
     auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
-    st.write(f'<a href="'+auth_link+'">Login Vantage oAuth</a>',unsafe_allow_html=True)
+    st.write(f'<a href="'+auth_link+'"><Button>Login Vantage oAuth</Button></a>',unsafe_allow_html=True)
     #st.write(auth_link)
 
 else:
@@ -72,7 +70,7 @@ else:
 
     data = {
 
-        'code_verifier': verifier,
+        'code_verifier':  st.session_state.verifier,
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,

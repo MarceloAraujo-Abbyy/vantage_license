@@ -35,7 +35,8 @@ grant_type = "authorization_code"
 state = string_num_generator(20)
 verifier = string_num_generator(56)
 challenger = pkce_challenge_from_verifier(verifier)
-st.wtite("verifier => "+ verifier)
+
+st.wtite("verifier => " + verifier)
 st.wtite("challenger => " + challenger)
 
 # Create an OAuth2 session

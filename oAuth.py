@@ -25,7 +25,7 @@ def pkce_challenge_from_verifier(v):
 
 
 
-st.title("ABBYY Vantage OAuth2 Authentication")
+#st.title("ABBYY Vantage OAuth2 Authentication")
 
 # OAuth2 client setup
 client_id = st.secrets["VANTAGE_CLIENT_ID"]
@@ -57,7 +57,7 @@ if 'code' not in st.query_params:
     #st.write(auth_link)
 
 else:
-    verifier = controller.get('streamlit-verifier')
+
     """
     st.write("authorization_response_code: " + st.query_params['code']) 
     st.write("authorization_response_scope: " + st.query_params['scope']) 

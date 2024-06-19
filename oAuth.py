@@ -23,6 +23,11 @@ def pkce_challenge_from_verifier(v):
     base64encoded = base64urlencode(hashed)
     return base64encoded
 
+
+
+st.title("ABBYY Vantage OAuth2 Authentication")
+
+
 # OAuth2 client setup
 client_id = st.secrets["VANTAGE_CLIENT_ID"]
 client_secret = st.secrets["VANTAGE_SECRET_ID"]
@@ -33,47 +38,35 @@ scope = "openid permissions global.wildcard offline_access"
 grant_type = "authorization_code"
 product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
 
-auth_link = ""
-
-if 'state' not in st.session_state:
-    st.session_state.state = ""
-if 'verifier' not in st.session_state:
-    st.session_state.verifier = ""
-if 'challenger' not in st.session_state:
-    st.session_state.challenger = ""
-
 if 'code' not in st.query_params:
+
     state = string_num_generator(20)
     verifier = string_num_generator(56)
     challenger = pkce_challenge_from_verifier(verifier)
 
-    st.session_state.state = state
-    st.session_state.verifier = verifier
-    st.session_state.challenger = challenger
+    if 'verifier' not in st.session_state:
+        st.session_state.verifier = verifier
 
     st.write("state: " + state)
     st.write("verifier: " + verifier)
+    st.write("verifier: " + st.session_state.verifier )
     st.write("challenger: " + challenger)
 
     auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
+    st.write(f'<a href="'+auth_link+'">Login Vantage oAuth</a>',unsafe_allow_html=True)
+    #st.write(auth_link)
 
-
-st.title("ABBYY Vantage OAuth2 Authentication")
-
-# Step 1: Test code exists
-if 'code' not in st.query_params:
-    #st.write(f'<a href="'+auth_link+'">Login Vantage oAuth</a>',unsafe_allow_html=True)
-    st.write(auth_link)
 else:
-    # Step 2: User returns to the app with the authorization code
+
     st.write("authorization_response_code: " + st.query_params['code']) 
     st.write("authorization_response_scope: " + st.query_params['scope']) 
     st.write("authorization_response_state: " + st.query_params['state']) 
+    st.write("verifier: " + st.session_state.verifier )
     st.write("authorization_response_session_state: " + st.query_params['session_state']) 
 
-    # Step 3: Fetch the token using the authorization response URL
     data = {
+        
         'code_verifier': st.session_state.verifier,
         'grant_type': grant_type,
         'client_id': client_id,

@@ -35,10 +35,10 @@ product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
 state = string_num_generator(20)
 verifier = string_num_generator(56)
 challenger = pkce_challenge_from_verifier(verifier)
-auth_link = urlencode(authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id)
+auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
 st.title("ABBYY Vantage OAuth2 Authentication")
-st.write(auth_link)
+st.write(urlencode(auth_link))
 
 # Step 1: Test code exists
 if 'code' not in st.query_params:

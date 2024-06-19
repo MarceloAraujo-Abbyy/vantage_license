@@ -59,6 +59,9 @@ else:
         'redirect_uri': redirect_uri,
         'scope': scope
     }
+
+    st.write(data)
+
     response = requests.post(token_url, data=data, headers={'accept': '*/*', 'Content-Type': 'application/x-www-form-urlencoded'})
     if response.status_code == 200:
         response_data = response.json()

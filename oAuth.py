@@ -4,7 +4,7 @@ import random
 import hashlib
 import base64
 import requests 
-import streamlit.components.v1 as components
+from streamlit_cookies_controller import CookieController
 
 def string_num_generator(size):
     chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
@@ -24,8 +24,7 @@ def pkce_challenge_from_verifier(v):
     return base64encoded
 
 
-
-#st.title("ABBYY Vantage OAuth2 Authentication")
+st.title("ABBYY Vantage OAuth2 Authentication")
 
 # OAuth2 client setup
 client_id = st.secrets["VANTAGE_CLIENT_ID"]
@@ -37,10 +36,17 @@ scope = "openid permissions global.wildcard offline_access"
 grant_type = "authorization_code"
 product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
 
+controller = CookieController()
+
 if 'code' not in st.query_params:
 
     if 'verifier' not in st.session_state:
-        st.session_state.verifier =  string_num_generator(56)
+        if controller.get('verifier') != "":
+            controller.remove('cookie_name')
+            st.session_state.verifier =  string_num_generator(56)
+            controller.set('verifier', st.session_state.verifier)
+    else: 
+        st.session_state.verifier = controller.get('verifier')
 
     state = string_num_generator(20)
     challenger = pkce_challenge_from_verifier(st.session_state.verifier)

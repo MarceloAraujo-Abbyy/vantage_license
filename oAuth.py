@@ -29,7 +29,7 @@ client_secret = st.secrets["VANTAGE_SECRET_ID"]
 authorization_base_url = 'https://vantage-us.abbyy.com/auth2/connect/authorize'
 token_url = 'https://vantage-us.abbyy.com/auth2/connect/token'
 redirect_uri = 'https://vantageaccess.streamlit.app'
-scope = "openid%20permissions%20global.wildcard%20offline_access"
+scope = "openid permissions global.wildcard offline_access"
 grant_type = "authorization_code"
 product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
 state = string_num_generator(20)
@@ -42,7 +42,7 @@ st.write(auth_link)
 
 # Step 1: Test code exists
 if 'code' not in st.query_params:
-    st.write(f'<a target="_self" href="'+auth_link+'"><button>Login to Vantage</button></a>',unsafe_allow_html=True)
+    st.write(f'<a target="_self" href="'+auth_link+'"></a>',unsafe_allow_html=True)
 else:
     # Step 2: User returns to the app with the authorization code
     authorization_response_code = st.query_params['code']

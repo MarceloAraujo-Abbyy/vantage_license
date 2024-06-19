@@ -31,9 +31,12 @@ authorization_base_url = 'https://vantage-us.abbyy.com/auth2/connect/authorize'
 token_url = 'https://vantage-us.abbyy.com/auth2/connect/token'
 redirect_uri = 'https://vantageaccess.streamlit.app'  # This should be the same as set in your OAuth provider settings
 scope = "openid permissions global.wildcard offline_access"
+grant_type = "authorization_code"
 state = string_num_generator(20)
 verifier = string_num_generator(56)
 challenger = pkce_challenge_from_verifier(verifier)
+st.wtite("verifier => "+ verifier)
+st.wtite("challenger => " + challenger)
 
 # Create an OAuth2 session
 oauth = OAuth2Session(client_id, redirect_uri=redirect_uri)
@@ -60,7 +63,7 @@ else:
     # Step 3: Fetch the token using the authorization response URL
     data = {
         'code_verifier': verifier,
-        'grant_type': "authorization_code",
+        'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,
         'code': authorization_response_code,

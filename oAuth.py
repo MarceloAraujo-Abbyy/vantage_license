@@ -35,17 +35,21 @@ product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
 
 auth_link = ""
 
+if 'state' not in st.session_state:
+    st.session_state.state = ""
+if 'verifier' not in st.session_state:
+    st.session_state.verifier = ""
+if 'challenger' not in st.session_state:
+    st.session_state.challenger = ""
+
 if 'code' not in st.query_params:
     state = string_num_generator(20)
     verifier = string_num_generator(56)
     challenger = pkce_challenge_from_verifier(verifier)
-    
-    if 'state' not in st.session_state:
-        st.session_state.state = state
-    if 'verifier' not in st.session_state:
-        st.session_state.verifier = verifier
-    if 'challenger' not in st.session_state:
-        st.session_state.challenger = challenger
+
+    st.session_state.state = state
+    st.session_state.verifier = verifier
+    st.session_state.challenger = challenger
 
     st.write("state: " + state)
     st.write("verifier: " + verifier)

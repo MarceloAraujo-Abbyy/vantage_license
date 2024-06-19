@@ -52,9 +52,8 @@ if 'code' not in st.query_params:
 
     auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
-    st.button("Login Vantage", on_click=(st.write(f'<a href="'+auth_link+'">Login Vantage oAut</a>',unsafe_allow_html=True)) )
+    st.write(f'<a href="'+auth_link+'">Login Vantage oAut</a>',unsafe_allow_html=True)
 
-    components.iframe(auth_link)
     #st.write(f'<a href="'+auth_link+'">Login Vantage oAut</a>',unsafe_allow_html=True)
     #st.write(auth_link)
 

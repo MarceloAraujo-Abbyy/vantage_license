@@ -42,7 +42,7 @@ if 'code' not in st.query_params:
 
     if 'verifier' not in st.session_state:
         if controller.get('verifier') != "":
-            controller.remove('cookie_name')
+            controller.remove('verifier')
             st.session_state["verifier"] =  string_num_generator(56)
             controller.set('verifier', st.session_state["verifier"])
     else: 

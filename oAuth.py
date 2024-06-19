@@ -35,17 +35,16 @@ redirect_uri = 'https://vantageaccess.streamlit.app'
 scope = "openid permissions global.wildcard offline_access"
 grant_type = "authorization_code"
 product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
-
+verifier = "amQqhsQU6ftKRC8mlBEDSV42HYeynr4Xb3kBIWGyTkaYpHli803IUNIn" # 
 controller = CookieController()
 
 if 'code' not in st.query_params:
 
-    if 'verifier' not in st.session_state:
-        st.session_state["verifier"] =  "amQqhsQU6ftKRC8mlBEDSV42HYeynr4Xb3kBIWGyTkaYpHli803IUNIn" # string_num_generator(56)
-        controller.set('verifier', st.session_state["verifier"])
-        st.write("novo verifier" + controller.get('verifier'))
+    #if 'verifier' not in st.session_state:
+    #    st.session_state["verifier"] =  string_num_generator(56)
+    #    controller.set('verifier', st.session_state["verifier"])
+    #    st.write("novo verifier" + controller.get('verifier'))
     
-    st.write("verifier" + controller.get('verifier'))
     
     state = string_num_generator(20)
     challenger = pkce_challenge_from_verifier(st.session_state["verifier"])
@@ -72,7 +71,7 @@ else:
     
     data = {
 
-        'code_verifier':controller.get('verifier'),
+        'code_verifier': verifier,
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,

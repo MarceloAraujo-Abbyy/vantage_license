@@ -52,7 +52,7 @@ if 'code' not in st.query_params:
 else:
     # Step 2: User returns to the app with the authorization code
     authorization_response = st.query_params
-    authorization_response_url = f"{redirect_uri}?code={authorization_response['code'][0]}"
+    authorization_response_url = f"{redirect_uri}?code={authorization_response['code']}"
 
 
     st.write("authorization_response_url: " + authorization_response_url) 

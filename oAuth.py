@@ -49,7 +49,8 @@ auth_link = "https://vantage-us.abbyy.com/auth2/connect/authorize?client_id="+cl
 # Step 1: User clicks the authorization link
 if 'code' not in st.query_params:
     #authorization_url, state = oauth.authorization_url(authorization_base_url)
-    st.write(f"[Authorize with ABBYY Vantage]({auth_link})")
+    st.write(f'<a target="_self" href="'+auth_link+'"><button>Login to Vantage</button></a>',unsafe_allow_html=True)
+    #st.write(f"[Authorize with ABBYY Vantage]({auth_link})")
 else:
     # Step 2: User returns to the app with the authorization code
     authorization_response = st.query_params

@@ -39,7 +39,6 @@ auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redi
 
 st.title("ABBYY Vantage OAuth2 Authentication")
 
-
 # Step 1: Test code exists
 if 'code' not in st.query_params:
     st.write(f'<a href="'+auth_link+'">Login Vantage oAuth</a>',unsafe_allow_html=True)

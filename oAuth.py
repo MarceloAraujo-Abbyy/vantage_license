@@ -33,7 +33,7 @@ redirect_uri = 'https://vantageaccess.streamlit.app'  # This should be the same 
 scope = "openid permissions global.wildcard offline_access"
 grant_type = "authorization_code"
 state = string_num_generator(20)
-verifier = string_num_generator(56)
+verifier = "fdTXBnIYtRW4l8Qn6ybrNJYbfc8ZDvK1ZPE3M9jEXOUaplt9aRn9qPpi" #string_num_generator(56)
 challenger = pkce_challenge_from_verifier(verifier)
 
 st.write("verifier => " + verifier)

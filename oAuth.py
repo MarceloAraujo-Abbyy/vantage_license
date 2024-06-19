@@ -46,9 +46,9 @@ if 'code' not in st.query_params:
     challenger = pkce_challenge_from_verifier(st.session_state.verifier)
     verifier =  st.session_state.verifier
 
-    st.write("state: " + state)
-    st.write("verifier: " + verifier )
-    st.write("challenger: " + challenger)
+    #st.write("state: " + state)
+    #st.write("verifier: " + verifier )
+    #st.write("challenger: " + challenger)
 
     auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
@@ -59,14 +59,12 @@ if 'code' not in st.query_params:
 
 else:
 
-    """
-    st.write("authorization_response_code: " + st.query_params['code']) 
-    st.write("authorization_response_scope: " + st.query_params['scope']) 
-    st.write("authorization_response_state: " + st.query_params['state']) 
-    st.write("verifier: " + verifier )
-    st.write("authorization_response_session_state: " + st.query_params['session_state']) 
-    """
-
+    #st.write("authorization_response_code: " + st.query_params['code']) 
+    #st.write("authorization_response_scope: " + st.query_params['scope']) 
+    #st.write("authorization_response_state: " + st.query_params['state']) 
+    #st.write("verifier: " + verifier )
+    #st.write("authorization_response_session_state: " + st.query_params['session_state']) 
+    
     data = {
 
         'code_verifier':  st.session_state.verifier,
@@ -78,9 +76,9 @@ else:
         'scope':  st.query_params['scope']
     }
 
-    st.write(data)
-
     response = requests.post(token_url, data=data, headers={'accept': '*/*', 'Content-Type': 'application/x-www-form-urlencoded'})
+    st.write(data)
+    
     if response.status_code == 200:
         response_data = response.json()
         token = response_data['access_token']

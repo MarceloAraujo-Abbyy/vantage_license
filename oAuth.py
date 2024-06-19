@@ -48,8 +48,10 @@ if 'code' not in st.query_params:
     state = string_num_generator(20)
     challenger = pkce_challenge_from_verifier(st.session_state.verifier)
 
+    verifier = controller.get('streamlit-verifier')
+
     st.write("state: " + state)
-    st.write("verifier: " + st.session_state.verifier )
+    st.write("verifier: " + verifier )
     st.write("challenger: " + challenger)
 
     auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id

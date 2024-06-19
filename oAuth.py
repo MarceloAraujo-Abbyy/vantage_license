@@ -41,13 +41,9 @@ controller = CookieController()
 if 'code' not in st.query_params:
 
     if 'verifier' not in st.session_state:
-        if controller.get('verifier'):
-            controller.remove('verifier')
-            st.session_state["verifier"] =  string_num_generator(56)
-            controller.set('verifier', st.session_state["verifier"])
-    else: 
-        st.session_state["verifier"] = controller.get('verifier')
-
+        st.session_state["verifier"] =  string_num_generator(56)
+        controller.set('verifier', st.session_state["verifier"])
+    
     state = string_num_generator(20)
     challenger = pkce_challenge_from_verifier(st.session_state["verifier"])
     verifier =  st.session_state.verifier
@@ -64,6 +60,9 @@ if 'code' not in st.query_params:
     #st.write(auth_link)
 
 else:
+
+    if 'verifier' not in st.session_state:
+        st.session_state["verifier"] = controller.get('verifier')
 
     #st.write("authorization_response_code: " + st.query_params['code']) 
     #st.write("authorization_response_scope: " + st.query_params['scope']) 

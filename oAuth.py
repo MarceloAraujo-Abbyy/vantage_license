@@ -4,7 +4,7 @@ import random
 import hashlib
 import base64
 import requests 
-from urllib.parse import urlencode
+
 
 def string_num_generator(size):
     chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
@@ -29,7 +29,7 @@ client_secret = st.secrets["VANTAGE_SECRET_ID"]
 authorization_base_url = 'https://vantage-us.abbyy.com/auth2/connect/authorize'
 token_url = 'https://vantage-us.abbyy.com/auth2/connect/token'
 redirect_uri = 'https://vantageaccess.streamlit.app'
-scope = "openid permissions global.wildcard offline_access"
+scope = "openid%20permissions%20global.wildcard%20offline_access"
 grant_type = "authorization_code"
 product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
 state = string_num_generator(20)
@@ -38,7 +38,7 @@ challenger = pkce_challenge_from_verifier(verifier)
 auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
 st.title("ABBYY Vantage OAuth2 Authentication")
-st.write(urlencode(auth_link))
+st.write(auth_link)
 
 # Step 1: Test code exists
 if 'code' not in st.query_params:

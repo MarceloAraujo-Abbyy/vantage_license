@@ -37,6 +37,7 @@ verifier = string_num_generator(56)
 challenger = pkce_challenge_from_verifier(verifier)
 auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
+st.write("state: " + state)
 st.write("verifier: " + verifier)
 st.write("challenger: " + challenger)
 
@@ -48,8 +49,10 @@ if 'code' not in st.query_params:
     st.write(auth_link)
 else:
     # Step 2: User returns to the app with the authorization code
-    authorization_response_code = st.query_params['code']
-    st.write("authorization_response_code: " + authorization_response_code) 
+    st.write("authorization_response_code: " + st.query_params['code']) 
+    st.write("authorization_response_scope: " + st.query_params['scope']) 
+    st.write("authorization_response_state: " + st.query_params['state']) 
+    st.write("authorization_response_session_state: " + st.query_params['session_state']) 
 
     # Step 3: Fetch the token using the authorization response URL
     data = {

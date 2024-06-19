@@ -4,7 +4,7 @@ import random
 import hashlib
 import base64
 import requests 
-from streamlit_cookies_controller import CookieController
+import streamlit.components.v1 as components
 
 def string_num_generator(size):
     chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
@@ -27,8 +27,6 @@ def pkce_challenge_from_verifier(v):
 
 st.title("ABBYY Vantage OAuth2 Authentication")
 
-controller = CookieController()
-
 # OAuth2 client setup
 client_id = st.secrets["VANTAGE_CLIENT_ID"]
 client_secret = st.secrets["VANTAGE_SECRET_ID"]
@@ -43,8 +41,7 @@ if 'code' not in st.query_params:
 
     if 'verifier' not in st.session_state:
         st.session_state.verifier =  string_num_generator(56)
-#        controller.set('streamlit-verifier', st.session_state.verifier)
-    
+
     state = string_num_generator(20)
     challenger = pkce_challenge_from_verifier(st.session_state.verifier)
     verifier =  st.session_state.verifier
@@ -55,7 +52,8 @@ if 'code' not in st.query_params:
 
     auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
-    st.write(f'<a href="'+auth_link+'"><Button>Login Vantage oAuth</Button></a>',unsafe_allow_html=True)
+    components.iframe(auth_link)
+    #st.write(f'<a href="'+auth_link+'"><Button>Login Vantage oAuth</Button></a>',unsafe_allow_html=True)
     #st.write(auth_link)
 
 else:

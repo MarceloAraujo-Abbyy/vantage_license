@@ -46,12 +46,12 @@ authorization_url, state = oauth.authorization_url(auth_link)
 st.write(f"[Authorize with ABBYY Vantage]({authorization_url})")
 
 # Step 1: User clicks the authorization link
-if 'code' not in st.st.query_params():
+if 'code' not in st.query_params():
     authorization_url, state = oauth.authorization_url(authorization_base_url)
     st.write(f"[Authorize with ABBYY Vantage]({authorization_url})")
 else:
     # Step 2: User returns to the app with the authorization code
-    authorization_response = st.st.query_params()
+    authorization_response = st.query_params()
     authorization_response_url = f"{redirect_uri}?code={authorization_response['code'][0]}"
 
     # Step 3: Fetch the token using the authorization response URL

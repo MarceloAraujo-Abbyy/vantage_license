@@ -37,6 +37,9 @@ verifier = string_num_generator(56)
 challenger = pkce_challenge_from_verifier(verifier)
 auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
+st.write("verifier: " + verifier)
+st.write("challenger: " + challenger)
+
 st.title("ABBYY Vantage OAuth2 Authentication")
 
 # Step 1: Test code exists

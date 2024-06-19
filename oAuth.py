@@ -36,8 +36,8 @@ state = string_num_generator(20)
 verifier = string_num_generator(56)
 challenger = pkce_challenge_from_verifier(verifier)
 
-st.wtite("verifier => " + verifier)
-st.wtite("challenger => " + challenger)
+st.write("verifier => " + verifier)
+st.write("challenger => " + challenger)
 
 # Create an OAuth2 session
 oauth = OAuth2Session(client_id, redirect_uri=redirect_uri)

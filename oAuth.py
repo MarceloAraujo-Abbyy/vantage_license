@@ -3,7 +3,6 @@ import string
 import random
 import hashlib
 import base64
-import logging
 from requests_oauthlib import OAuth2Session
 
 
@@ -42,7 +41,7 @@ oauth = OAuth2Session(client_id, redirect_uri=redirect_uri)
 st.title("ABBYY Vantage OAuth2 Authentication")
 
 auth_link = "https://vantage-us.abbyy.com/auth2/connect/authorize?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge"+challenger+"&code_challenge_method=S256&productId=a8548c9b-cb90-4c66-8567-d7372bb9b963"
-logging.warning("auth_link => "+ auth_link)
+st.write("auth_link => "+ auth_link)
 
 authorization_url, state = oauth.authorization_url(auth_link)
 st.write(f"[Authorize with ABBYY Vantage]({authorization_url})")

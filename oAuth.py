@@ -42,7 +42,7 @@ st.title("ABBYY Vantage OAuth2 Authentication")
 # Step 1: Test code exists
 if 'code' not in st.query_params:
     st.write(f'<a href="'+auth_link+'">Login Vantage oAuth</a>',unsafe_allow_html=True)
-    #st.write(auth_link)
+    st.write(auth_link)
 else:
     # Step 2: User returns to the app with the authorization code
     authorization_response_code = st.query_params['code']

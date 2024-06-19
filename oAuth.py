@@ -41,7 +41,7 @@ controller = CookieController()
 if 'code' not in st.query_params:
 
     if 'verifier' not in st.session_state:
-        st.session_state["verifier"] =  string_num_generator(56)
+        st.session_state["verifier"] =  "amQqhsQU6ftKRC8mlBEDSV42HYeynr4Xb3kBIWGyTkaYpHli803IUNIn" # string_num_generator(56)
         controller.set('verifier', st.session_state["verifier"])
         st.write("novo verifier" + controller.get('verifier'))
     

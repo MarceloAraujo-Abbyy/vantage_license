@@ -74,7 +74,7 @@ else:
         st.write("Erro logging: " + response.text) 
 
 
-    token = oauth.fetch_token(token_url, authorization_response=authorization_response_url, client_secret=client_secret)
+    #token = oauth.fetch_token(token_url, authorization_response=authorization_response_url, client_secret=client_secret)
 
     # Step 4: Use the token to access protected resources
     st.write("Authentication successful!")

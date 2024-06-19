@@ -43,10 +43,10 @@ if 'code' not in st.query_params:
     if 'verifier' not in st.session_state:
         if controller.get('verifier') != "":
             controller.remove('cookie_name')
-            st.session_state.verifier =  string_num_generator(56)
-            controller.set('verifier', st.session_state.verifier)
+            st.session_state["verifier"] =  string_num_generator(56)
+            controller.set('verifier', st.session_state["verifier"])
     else: 
-        st.session_state.verifier = controller.get('verifier')
+        st.session_state["verifier"] = controller.get('verifier')
 
     state = string_num_generator(20)
     challenger = pkce_challenge_from_verifier(st.session_state.verifier)
@@ -73,7 +73,7 @@ else:
     
     data = {
 
-        'code_verifier':  st.session_state.verifier,
+        'code_verifier':st.session_state["verifier"],
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,

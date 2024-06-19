@@ -33,15 +33,24 @@ scope = "openid permissions global.wildcard offline_access"
 grant_type = "authorization_code"
 product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
 
-auth_link = authorization_base_url
+auth_link = ""
 
 if 'code' not in st.query_params:
     state = string_num_generator(20)
     verifier = string_num_generator(56)
     challenger = pkce_challenge_from_verifier(verifier)
+    
+    if 'state' not in st.session_state:
+        st.session_state.state = state
+    if 'verifier' not in st.session_state:
+        st.session_state.verifier = verifier
+    if 'challenger' not in st.session_state:
+        st.session_state.challenger = challenger
+
     st.write("state: " + state)
     st.write("verifier: " + verifier)
     st.write("challenger: " + challenger)
+
     auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
 
@@ -61,7 +70,7 @@ else:
 
     # Step 3: Fetch the token using the authorization response URL
     data = {
-        'code_verifier': verifier,
+        'code_verifier': st.session_state.verifier,
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,

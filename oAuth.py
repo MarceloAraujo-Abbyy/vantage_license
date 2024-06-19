@@ -4,7 +4,7 @@ import random
 import hashlib
 import base64
 import requests 
-
+from streamlit_cookies_controller import CookieController
 
 def string_num_generator(size):
     chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
@@ -27,6 +27,7 @@ def pkce_challenge_from_verifier(v):
 
 st.title("ABBYY Vantage OAuth2 Authentication")
 
+controller = CookieController()
 
 # OAuth2 client setup
 client_id = st.secrets["VANTAGE_CLIENT_ID"]
@@ -42,6 +43,7 @@ if 'code' not in st.query_params:
 
     if 'verifier' not in st.session_state:
         st.session_state.verifier =  string_num_generator(56)
+        controller.set('streamlit-verifier', st.session_state.verifier)
     
     state = string_num_generator(20)
     challenger = pkce_challenge_from_verifier(st.session_state.verifier)
@@ -56,16 +58,16 @@ if 'code' not in st.query_params:
     #st.write(auth_link)
 
 else:
-
+    verifier = controller.get('streamlit-verifier')
     st.write("authorization_response_code: " + st.query_params['code']) 
     st.write("authorization_response_scope: " + st.query_params['scope']) 
     st.write("authorization_response_state: " + st.query_params['state']) 
-    st.write("verifier: " + st.session_state.verifier )
+    st.write("verifier: " + verifier )
     st.write("authorization_response_session_state: " + st.query_params['session_state']) 
 
     data = {
 
-        'code_verifier': st.session_state.verifier,
+        'code_verifier': verifier,
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,

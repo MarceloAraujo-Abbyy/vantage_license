@@ -41,9 +41,9 @@ if 'code' not in st.query_params:
     verifier =  state[:16]
     challenger = pkce_challenge_from_verifier(verifier)
 
-    #st.write("state: " + state)
-    #st.write("verifier: " + verifier )
-    #st.write("challenger: " + challenger)
+    st.write("state: " + state)
+    st.write("verifier: " + verifier )
+    st.write("challenger: " + challenger)
 
     auth_link = authorization_base_url+"?client_id="+client_id+"&redirect_uri="+redirect_uri+"&response_type=code&scope="+scope+"&state="+state+"&code_challenge="+challenger+"&code_challenge_method=S256&productId="+product_id
 
@@ -54,10 +54,10 @@ if 'code' not in st.query_params:
 
 else:
 
-    #st.write("authorization_response_code: " + st.query_params['code']) 
-    #st.write("authorization_response_scope: " + st.query_params['scope']) 
-    #st.write("authorization_response_state: " + st.query_params['state']) 
-    #st.write("verifier: " + verifier )
+    st.write("authorization_response_code: " + st.query_params['code']) 
+    st.write("authorization_response_scope: " + st.query_params['scope']) 
+    st.write("authorization_response_state: " + st.query_params['state']) 
+    st.write("verifier: " + st.query_params['state'][:16] )
     #st.write("authorization_response_session_state: " + st.query_params['session_state']) 
     
     data = {

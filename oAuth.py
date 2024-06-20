@@ -63,7 +63,7 @@ else:
     
     data = {
 
-        'code_verifier': st.session_state["verifier"],
+        'code_verifier': st.query_params['state'],
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,

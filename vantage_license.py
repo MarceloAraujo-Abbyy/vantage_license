@@ -11,7 +11,7 @@ import requests
 ###  streamlit run C:\Users\marceloraraujo\Documents\vantage_license\vantage-license\vantage_license.py
 
 # Login Vantage
-def login_vantage(tenant_name,tenant_id,username,password,client_id,client_secret):
+def login_vantage(tenant_name,tenant_id,username,password,client_id,client_secret,register):
     if username != "" and password != "":
         url = "https://vantage-us.abbyy.com/auth2/"+tenant_id+"/connect/token"
         payload = 'grant_type=password&scope=openid permissions global.wildcard&username='+username+'&password='+password+'&client_id='+client_id+'&client_secret='+client_secret
@@ -22,12 +22,14 @@ def login_vantage(tenant_name,tenant_id,username,password,client_id,client_secre
             accessToken = "Bearer " + str(obj["access_token"])
             st.session_state['token'] = accessToken
             st.session_state['status'] = "🟢 Logged in " + tenant_name
-            st.markdown(st.session_state['status'], unsafe_allow_html=True)
+            if register:
+                st.markdown(st.session_state['status'], unsafe_allow_html=True)
             return(accessToken)
         else:
             st.session_state['token'] = ""
             st.session_state['status'] = "🔴 Error to logging in " + tenant_name
-            st.markdown(st.session_state['status'], unsafe_allow_html=True)
+            if register:
+                st.markdown(st.session_state['status'], unsafe_allow_html=True)
             return("Error to login!")
 
 def read_data_usr(json_array):
@@ -111,7 +113,7 @@ def get_data(tenants):
     lic_data = []
     usr_data = []
     for item in tenant_list:
-        accessToken = login_vantage(item['tenant_name'], item["tenant_id"], item["user"], item["pwd"], item["client_id"], item["client_secret"])
+        accessToken = login_vantage(item['tenant_name'], item["tenant_id"], item["user"], item["pwd"], item["client_id"], item["client_secret"], True)
         if accessToken.startswith("Bearer"):
             #read license
             url = "https://vantage-us.abbyy.com/api/workspace/subscriptions/me"
@@ -168,7 +170,7 @@ with st.sidebar:
     username = st.text_input("Email")
     password = st.text_input("Password",type="password")
     tenant_id, client_id, client_secret = get_tenant_data(tenant)
-    st.button("Login", on_click=login_vantage, args=[tenant,tenant_id,username,password,client_id,client_secret] )
+    st.button("Login", on_click=login_vantage, args=[tenant,tenant_id,username,password,client_id,client_secret,False] )
     status = st.text_input("Status", value=st.session_state['status'], disabled=True)
 
 # Initialize APP

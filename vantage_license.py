@@ -78,6 +78,8 @@ def read_data_lic(json_array):
         for skill in data['data']['skills']:
             if skill['name'] == "General":
                 skill_type = "Core Cognitive" 
+            elif skill['name'] == "ABBYY.Ocr": 
+                skill_type = "Ocr Skill"
             else: 
                 skill_type = "Production Skill"
 

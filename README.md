@@ -2,20 +2,16 @@
 
 This application helps manager license in different Vantage Tenants.
 
-Install dependencies.
+Requirements
+Github user - To fork this repository
+Streamlit user - To publish using Streamlit cloud. 
 
-```python
-pip install -r requirements.txt
-```
 
 ## Usage
 
-You'll need to set up your ABBYY Vantage tenant and a JSON with the tenant information you want to manager. 
+You'll need to set up your ABBYY Vantage tenants information you want to manager. 
 
 When create your streamlit app, set the secrets with the according information: 
 
 ```python
-VANTAGE_CLIENT_ID = "" 
-VANTAGE_SECRET_ID = ""
-VANTAGE_TENANT_ID = "" 
-VANTAGE_TENANTS = "[ {tenant_name: "", user: "", pwd: "", client_id: "", secret_id: "" } ]" 
+VANTAGE_TENANTS = "[ {tenant_name: "", user: "", pwd: "", client_id: "", secret_id: "" }, ... ]" 

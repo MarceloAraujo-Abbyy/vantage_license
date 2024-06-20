@@ -22,12 +22,12 @@ def login_vantage(tenant_name,tenant_id,username,password,client_id,client_secre
             accessToken = "Bearer " + str(obj["access_token"])
             st.session_state['token'] = accessToken
             st.session_state['status'] = "🟢 Logged in " + tenant_name
-            #st.markdown("🟢 Logged with Success in " + tenant_name, unsafe_allow_html=True)
+            st.markdown(st.session_state['status'], unsafe_allow_html=True)
             return(accessToken)
         else:
             st.session_state['token'] = ""
             st.session_state['status'] = "🔴 Error to logging in " + tenant_name
-            #st.markdown("🔴 Error to login in " + tenant_name, unsafe_allow_html=True)
+            st.markdown(st.session_state['status'], unsafe_allow_html=True)
             return("Error to login!")
 
 def read_data_usr(json_array):

@@ -37,8 +37,8 @@ product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
 
 if 'code' not in st.query_params:
 
-    state = string_num_generator(32)
-    verifier =  state[:16]
+    state = string_num_generator(48)
+    verifier =  state[:24]
     challenger = pkce_challenge_from_verifier(verifier)
 
     st.write("state: " + state)
@@ -57,12 +57,12 @@ else:
     st.write("authorization_response_code: " + st.query_params['code']) 
     st.write("authorization_response_scope: " + st.query_params['scope']) 
     st.write("authorization_response_state: " + st.query_params['state']) 
-    st.write("verifier: " + st.query_params['state'][:16] )
+    st.write("verifier: " + st.query_params['state'][:24] )
     #st.write("authorization_response_session_state: " + st.query_params['session_state']) 
     
     data = {
 
-        'code_verifier': st.query_params['state'][:16],
+        'code_verifier': st.query_params['state'][:24],
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,

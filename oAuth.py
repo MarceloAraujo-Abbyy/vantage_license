@@ -40,15 +40,12 @@ controller = CookieController()
 
 if 'code' not in st.query_params:
 
-    #if 'verifier' not in st.session_state:
-    #    st.session_state["verifier"] =  string_num_generator(56)
-    #    controller.set('verifier', st.session_state["verifier"])
-    #    st.write("novo verifier" + controller.get('verifier'))
-    
+    if 'verifier' not in st.session_state:
+        st.session_state["verifier"] =  string_num_generator(56)
     
     state = string_num_generator(20)
     challenger = pkce_challenge_from_verifier(st.session_state["verifier"])
-    verifier =  st.session_state.verifier
+    verifier =  st.session_state["verifier"]
 
     #st.write("state: " + state)
     #st.write("verifier: " + verifier )
@@ -71,7 +68,7 @@ else:
     
     data = {
 
-        'code_verifier': verifier,
+        'code_verifier': st.session_state["verifier"],
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,

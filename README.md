@@ -2,9 +2,13 @@
 
 This application helps manager license in different Vantage Tenants.
 
-Requirements
+Requirements:
+
 Github user - To fork this repository
+
 Streamlit user - To publish using Streamlit cloud. 
+
+
 
 
 ## Usage

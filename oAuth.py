@@ -4,7 +4,6 @@ import random
 import hashlib
 import base64
 import requests 
-from streamlit_cookies_controller import CookieController
 
 def string_num_generator(size):
     chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
@@ -36,16 +35,12 @@ scope = "openid permissions global.wildcard offline_access"
 grant_type = "authorization_code"
 product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
 verifier = "amQqhsQU6ftKRC8mlBEDSV42HYeynr4Xb3kBIWGyTkaYpHli803IUNIn" # 
-controller = CookieController()
 
 if 'code' not in st.query_params:
 
-    if 'verifier' not in st.session_state:
-        st.session_state["verifier"] =  string_num_generator(56)
-    
     state = string_num_generator(20)
-    challenger = pkce_challenge_from_verifier(st.session_state["verifier"])
-    verifier =  st.session_state["verifier"]
+    challenger = pkce_challenge_from_verifier(state)
+    verifier =  state
 
     #st.write("state: " + state)
     #st.write("verifier: " + verifier )

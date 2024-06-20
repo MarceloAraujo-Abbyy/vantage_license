@@ -29,7 +29,7 @@ st.title("ABBYY Vantage OAuth2 Authentication")
 client_id = st.secrets["VANTAGE_CLIENT_ID"]
 client_secret = st.secrets["VANTAGE_SECRET_ID"]
 authorization_base_url = 'https://vantage-us.abbyy.com/auth2/connect/authorize'
-token_url = 'https://vantage-us.abbyy.com/auth2/04db7530-dc41-4ae2-9194-a18d786eb877/connect/token'
+token_url = 'https://vantage-us.abbyy.com/auth2/connect/token'
 redirect_uri = 'https://vantageaccess.streamlit.app'
 scope = "openid permissions global.wildcard"
 grant_type = "authorization_code"

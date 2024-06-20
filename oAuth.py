@@ -34,13 +34,12 @@ redirect_uri = 'https://vantageaccess.streamlit.app'
 scope = "openid permissions global.wildcard offline_access"
 grant_type = "authorization_code"
 product_id= "a8548c9b-cb90-4c66-8567-d7372bb9b963"
-verifier = "amQqhsQU6ftKRC8mlBEDSV42HYeynr4Xb3kBIWGyTkaYpHli803IUNIn" # 
 
 if 'code' not in st.query_params:
 
-    state = string_num_generator(20)
-    challenger = pkce_challenge_from_verifier(state)
-    verifier =  state
+    state = string_num_generator(32)
+    verifier =  state[:16]
+    challenger = pkce_challenge_from_verifier(verifier)
 
     #st.write("state: " + state)
     #st.write("verifier: " + verifier )
@@ -63,7 +62,7 @@ else:
     
     data = {
 
-        'code_verifier': st.query_params['state'],
+        'code_verifier': st.query_params['state'][:16],
         'grant_type': grant_type,
         'client_id': client_id,
         'client_secret': client_secret,

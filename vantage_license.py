@@ -322,14 +322,19 @@ if  st.session_state["token"] != "":
 
         # Licenses by Tenant Dash
         st.header("Licenses by Tenant")
+
         df_totals = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
-        df_totals.columns = ["Skill", "Type", "Pages Used", "Page Limit", "Pages Left"]
+        df_totals.columns = ["Tenant", "Type", "Pages Used", "Page Limit", "Pages Left"]
         df_totals = df_totals.sort_values(by="Pages Used", ascending=True)
-        vcol1, vcol2 = st.columns(2)
-        with vcol1:
-            st.dataframe(df_totals, hide_index=True)
-        with vcol2:
-            st.bar_chart(df_totals, x="Skill", y=("Pages Used","Pages Left"))
+        tenants = df_cons_skill['Tenant'].unique()
+        for tenant in tenants:
+            st.write("Tenant: "+ tenant)
+            tenant_df = df_totals[df_totals['Tenant'] == tenant]
+            vcol1, vcol2 = st.columns(2)
+            with vcol1:
+                st.dataframe(tenant_df, hide_index=True)
+            with vcol2:
+                st.bar_chart(tenant_df, x="Type", y=("Pages Used","Pages Left"))
 
         # Licenses complete data
         st.header("Licenses Data")
@@ -355,11 +360,16 @@ if  st.session_state["token"] != "":
         st.header("Users by Roles")
         df_roles_tenant = usr_df.groupby(["tenant", "role"]).agg({'email': 'count'}).reset_index().rename(columns={"email":"count"})
         df_roles_tenant.columns = ["Tenant", "Role" ,"Users Count"]
-        rcol1, rcol2 = st.columns(2)
-        with rcol1:
-            st.dataframe(df_roles_tenant, hide_index=True)
-        with rcol2:
-            st.bar_chart(df_roles_tenant, x="Role", y="Users Count")
+        
+        tenants = df_cons_skill['Tenant'].unique()
+        for tenant in tenants:
+            st.write("Tenant: " + tenant)
+            tenant_df = df_roles_tenant[df_roles_tenant['Tenant'] == tenant]
+            rcol1, rcol2 = st.columns(2)
+            with rcol1:
+                st.dataframe(tenant_df, hide_index=True)
+            with rcol2:
+                st.bar_chart(tenant_df, x="Role", y="Users Count")
 
         # Uses complete data 
         st.header("Users Data")

@@ -295,12 +295,18 @@ if  st.session_state["token"] != "":
         
         tenants = df_cons_skill['Tenant'].unique()
         for tenant in tenants:
+            st.write("Tenant: "+ tenant)
             tenant_df = df_cons_skill[df_cons_skill['Tenant'] == tenant]
             cscol1, cscol2 = st.columns(2)
             with cscol1:
                 st.dataframe(tenant_df, hide_index=True)
             with cscol2:
                 st.bar_chart(tenant_df, x=("Skill Name"), y=("Pages Used", "Documents"), stack=False,  horizontal=True, x_label="Pages")
+
+        st.header("Comsumption Data")
+        cons_df.columns = ["Tenant", "Transaction", "Created", "Skill Name", "Pages Used", "Document"]
+        st.dataframe(cons_df, hide_index=True, use_container_width=True)
+        
 
     with lic_tab:        
 

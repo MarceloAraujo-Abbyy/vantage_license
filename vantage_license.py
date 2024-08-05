@@ -32,6 +32,81 @@ def login_vantage(tenant_name,tenant_id,username,password,client_id,client_secre
                 st.markdown(st.session_state['status'], unsafe_allow_html=True)
             return("Error to login!")
 
+def getSkillName(skill,tenant_name):
+    tenant_list = json.loads(tenants)
+    for tenant in tenant_list:
+        if tenant['tenant_name'] == tenant_name:
+            accessToken = login_vantage(tenant['tenant_name'], tenant["tenant_id"], tenant["user"], tenant["pwd"], tenant["client_id"], tenant["client_secret"], False)       
+            if accessToken.startswith("Bearer"):
+                url = "https://vantage-us.abbyy.com/api/publicapi/v1/skills/"+skill
+                headers = {'Authorization': accessToken, 'Accept': '*/*'}
+                payload = {}
+                response = requests.request("GET", url, headers=headers, data=payload)
+                obj = json.loads(response.text)
+                print(obj['name'])
+                return obj['name']
+
+@st.cache_data            
+def replaceSkillName(df):
+    
+    skill_cache = {}
+    
+    def get_skill_name_cached(row):
+        skill_id=row['skill']
+        tenant_name=row['tenant_name']
+        cache_key = (skill_id, tenant_name)
+        if cache_key in skill_cache:
+            return skill_cache[cache_key]
+        
+        skill_name = getSkillName(skill_id,tenant_name)
+        skill_cache[cache_key] = skill_name
+        return skill_name
+    
+    df['skill_name'] = df.apply(get_skill_name_cached, axis=1)
+    skill_col_index = df.columns.get_loc('skill')
+    df = df.drop(columns=['skill'])
+    cols = list(df.columns)
+    cols.insert(skill_col_index, cols.pop(cols.index('skill_name')))
+    df = df[cols]
+    
+    return df
+
+def read_data_cons(json_cons):
+
+    data_list = json.loads(json_cons)
+    tenants = []
+    transactions = []
+    createds = []
+    skills = []
+    pages = []
+    docs = []
+    for data in data_list:
+            tenant_name = data['tenant']
+            for item in data['data']['items']:
+                transaction= item["transactionId"]
+                created= item["createTimeUtc"]
+                skill= item["skillId"]
+                page= item["pageCount"]
+                doc= item["documentCount"]
+
+                tenants.append(tenant_name)
+                transactions.append(transaction)
+                createds.append(created)
+                skills.append(skill)
+                pages.append(page)
+                docs.append(doc)
+
+    df = pd.DataFrame({
+        'tenant_name': tenants,
+        'transaction': transactions,
+        'created': createds,
+        'skill': skills,
+        'page': pages,
+        'doc': docs
+    })
+    
+    return df
+
 def read_data_usr(json_array):
     data_list = json.loads(json_array)
     tenant_names = []
@@ -107,11 +182,14 @@ def read_data_lic(json_array):
     
     return df
 
+@st.cache_data
 def get_data(tenants):
 
     tenant_list = json.loads(tenants)
     lic_data = []
     usr_data = []
+    cons_data = []
+
     for item in tenant_list:
         accessToken = login_vantage(item['tenant_name'], item["tenant_id"], item["user"], item["pwd"], item["client_id"], item["client_secret"], True)
         if accessToken.startswith("Bearer"):
@@ -129,10 +207,19 @@ def get_data(tenants):
             response = requests.request("GET", url, headers=headers, data=payload)
             obj = json.loads(response.text)
             usr_data.append({"tenant": item["tenant_name"], "data": obj})
+            #read completed transactions
+            url = "https://vantage-us.abbyy.com/api/publicapi/v1/transactions/completed?Offset=0&Limit=1000"
+            headers = {'Authorization': accessToken, 'Accept': '*/*'}
+            payload = {}
+            response = requests.request("GET", url, headers=headers, data=payload)
+            obj = json.loads(response.text)
+            cons_data.append({"tenant": item["tenant_name"], "data": obj})
 
     json_lic = json.dumps(lic_data)
     json_usr = json.dumps(usr_data)
-    return json_lic, json_usr
+    json_cons = json.dumps(cons_data)
+
+    return json_lic, json_usr, json_cons
 
 def highlight_less_than(val,ref):
     color = 'red' if int(val) < int(ref) else ''
@@ -179,69 +266,99 @@ st.write("Author: marcelo.araujo@abbyy.com")
 
 if  st.session_state["token"] != "":
 
-    st.header("Connecting to Vantage Tenants ... ")
-    tenants = st.secrets["VANTAGE_TENANTS"]    
-    
-    # Reading Data
-    lic_data, usr_data = get_data(tenants)
-    lic_df = read_data_lic(lic_data)
-    usr_df = read_data_usr(usr_data)
+    conn_tab, cons_tab, lic_tab, user_tab = st.tabs(["Connections", "Consumption", "Subscription", "User"])
 
-    # Licenses by Skill Dash
-    st.header("Licenses by Skill")
-    df_totals_tenant = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
-    df_totals_tenant.columns = ["Tenant", "Type", "Pages Used", "Page Limit", "Pages Left"]
-    df_totals_tenant = df_totals_tenant.sort_values(by=["Tenant",'Type'], ascending=True)
-    tcol1, tcol2 = st.columns(2)
-    with tcol1:
-        st.dataframe(df_totals_tenant, hide_index=True)
-    with tcol2:
-        st.bar_chart(df_totals_tenant, x=("Type"), y=("Pages Used","Pages Left"))
+    with conn_tab:
+        tenants = st.secrets["VANTAGE_TENANTS"]   
+        lic_data, usr_data, cons_data = get_data(tenants)
+        cons_df = read_data_cons(cons_data)
+        cons_df = replaceSkillName(cons_df)
+        lic_df = read_data_lic(lic_data)
+        usr_df = read_data_usr(usr_data)
 
-    # Licenses by Tenant Dash
-    st.header("Licenses by Tenant")
-    df_totals = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
-    df_totals.columns = ["Skill", "Type", "Pages Used", "Page Limit", "Pages Left"]
-    df_totals = df_totals.sort_values(by="Pages Used", ascending=True)
-    vcol1, vcol2 = st.columns(2)
-    with vcol1:
-        st.dataframe(df_totals, hide_index=True)
-    with vcol2:
-        st.bar_chart(df_totals, x="Skill", y=("Pages Used","Pages Left"))
+    with cons_tab:  
+ 
+        st.header("Consumption by Tenant last 14 Days")
+        df_cons_tenant = cons_df.groupby(["tenant_name"]).agg({'page':sum, 'doc':sum}).reset_index()
+        df_cons_tenant.columns = ["Tenant",  "Pages Used", "Documents"]
+        df_cons_tenant = df_cons_tenant.sort_values(by=["Tenant"], ascending=True)
+        ctcol1, ctcol2 = st.columns(2)
+        with ctcol1:
+            st.dataframe(df_cons_tenant, hide_index=True)
+        with ctcol2:
+            st.bar_chart(df_cons_tenant, x=("Tenant"), y=("Pages Used", "Documents"), stack=False)
 
-    # Licenses complete data
-    st.header("Licenses Data")
-    lic_df.columns = ["Tenant", "Serial", "Expire Date", "Skill", "Type", "Pages Used", "Page Limit", "Pages Left"]
-    styled_df = lic_df.style.applymap(lambda x: highlight_less_than(x,1000),subset=["Pages Left"])
-    st.dataframe(styled_df, hide_index=True, use_container_width=True)
-    st.markdown('<span style="color: red;">(*) Less than 1000 pages left</span>',unsafe_allow_html=True)
-    st.header("")
+        st.header("Consumption by Skill last 14 Days")
+        df_cons_skill = cons_df.groupby(["tenant_name","skill_name"]).agg({'page':sum, 'doc':sum}).reset_index()
+        df_cons_skill.columns = ["Tenant", "Skill Name", "Pages Used", "Documents"]
+        df_cons_skill = df_cons_skill.sort_values(by=["Tenant", "Pages Used"], ascending=False)
+        
+        tenants = df_cons_skill['Tenant'].unique()
+        for tenant in tenants:
+            tenant_df = df_cons_skill[df_cons_skill['Tenant'] == tenant]
+            cscol1, cscol2 = st.columns(2)
+            with cscol1:
+                st.dataframe(tenant_df, hide_index=True)
+            with cscol2:
+                st.bar_chart(tenant_df, x=("Skill Name"), y=("Pages Used", "Documents"), stack=False,  horizontal=True, x_label="Pages")
 
-    # Users by Tenant Dash
-    st.header("Users by Tenant")
-    df_user_tenant = usr_df.drop_duplicates(subset='email')
-    df_user_tenant = df_user_tenant.groupby("tenant")['email'].count().reset_index()
-    df_user_tenant.columns = ["Tenant", "Users Count"]
-    ucol1, ucol2 = st.columns(2)
-    with ucol1:
-        st.dataframe(df_user_tenant, hide_index=True)
-    with ucol2:
-        st.bar_chart(df_user_tenant, x="Tenant", y="Users Count")
+    with lic_tab:        
 
-    # Users by Roles Dash
-    st.header("Users by Roles")
-    df_roles_tenant = usr_df.groupby(["tenant", "role"]).agg({'email': 'count'}).reset_index().rename(columns={"email":"count"})
-    df_roles_tenant.columns = ["Tenant", "Role" ,"Users Count"]
-    rcol1, rcol2 = st.columns(2)
-    with rcol1:
-        st.dataframe(df_roles_tenant, hide_index=True)
-    with rcol2:
-        st.bar_chart(df_roles_tenant, x="Role", y="Users Count")
+        st.header("Licenses by Skill")
+        df_totals_tenant = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
+        df_totals_tenant.columns = ["Tenant", "Type", "Pages Used", "Page Limit", "Pages Left"]
+        df_totals_tenant = df_totals_tenant.sort_values(by=["Tenant",'Type'], ascending=True)
+        tcol1, tcol2 = st.columns(2)
+        with tcol1:
+            st.dataframe(df_totals_tenant, hide_index=True)
+        with tcol2:
+            st.bar_chart(df_totals_tenant, x=("Type"), y=("Pages Used","Pages Left"))
 
-    # Uses complete data 
-    st.header("Users Data")
-    usr_df.columns = ["Tenant", "User Name", "E-mail", "Role"]
-    st.dataframe(usr_df, hide_index=True,use_container_width=True)
-    
+        # Licenses by Tenant Dash
+        st.header("Licenses by Tenant")
+        df_totals = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
+        df_totals.columns = ["Skill", "Type", "Pages Used", "Page Limit", "Pages Left"]
+        df_totals = df_totals.sort_values(by="Pages Used", ascending=True)
+        vcol1, vcol2 = st.columns(2)
+        with vcol1:
+            st.dataframe(df_totals, hide_index=True)
+        with vcol2:
+            st.bar_chart(df_totals, x="Skill", y=("Pages Used","Pages Left"))
+
+        # Licenses complete data
+        st.header("Licenses Data")
+        lic_df.columns = ["Tenant", "Serial", "Expire Date", "Skill", "Type", "Pages Used", "Page Limit", "Pages Left"]
+        styled_df = lic_df.style.applymap(lambda x: highlight_less_than(x,1000),subset=["Pages Left"])
+        st.dataframe(styled_df, hide_index=True, use_container_width=True)
+        st.markdown('<span style="color: red;">(*) Less than 1000 pages left</span>',unsafe_allow_html=True)
+        st.header("")
+
+    with user_tab:         # Users by Tenant Dash
+
+        st.header("Users by Tenant")
+        df_user_tenant = usr_df.drop_duplicates(subset='email')
+        df_user_tenant = df_user_tenant.groupby("tenant")['email'].count().reset_index()
+        df_user_tenant.columns = ["Tenant", "Users Count"]
+        ucol1, ucol2 = st.columns(2)
+        with ucol1:
+            st.dataframe(df_user_tenant, hide_index=True)
+        with ucol2:
+            st.bar_chart(df_user_tenant, x="Tenant", y="Users Count")
+
+        # Users by Roles Dash
+        st.header("Users by Roles")
+        df_roles_tenant = usr_df.groupby(["tenant", "role"]).agg({'email': 'count'}).reset_index().rename(columns={"email":"count"})
+        df_roles_tenant.columns = ["Tenant", "Role" ,"Users Count"]
+        rcol1, rcol2 = st.columns(2)
+        with rcol1:
+            st.dataframe(df_roles_tenant, hide_index=True)
+        with rcol2:
+            st.bar_chart(df_roles_tenant, x="Role", y="Users Count")
+
+        # Uses complete data 
+        st.header("Users Data")
+        usr_df.columns = ["Tenant", "User Name", "E-mail", "Role"]
+        st.dataframe(usr_df, hide_index=True,use_container_width=True)
+        
 
 

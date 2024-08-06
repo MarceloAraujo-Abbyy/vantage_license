@@ -1,12 +1,12 @@
 
 
 import streamlit as st
-import random
-import time
-import os
 import pandas as pd
+import datetime
 import json
 import requests
+from io import StringIO
+from dateutil.relativedelta import relativedelta
 
 ###  streamlit run C:\Users\marceloraraujo\Documents\vantage_license\vantage-license\vantage_license.py
 
@@ -243,6 +243,42 @@ def get_tenant_data(tenant):
             break
     return tenant_id, client_id, client_secret
 
+def get_transaction_data(accessToken, start_date, end_date):
+    url = "https://vantage-us.abbyy.com/api/reporting/v1/transaction-steps?startDate="+start_date.strftime('%Y-%m-%dT%H:%M:%S')+"&endDate="+end_date.strftime('%Y-%m-%dT%H:%M:%S')
+    headers = {'Authorization': accessToken, 'Accept': '*/*'}
+    payload = {}
+    response = requests.request("GET", url, headers=headers, data=payload)
+    if response.status_code == 200:
+        csv_data = StringIO(response.text)
+        df = pd.read_csv(csv_data)
+        return df
+    else:
+        print("Erro ao acessar a API")
+        return None
+
+@st.cache_data
+def get_transactions(tenant, start_date, end_date, step_days):
+    tenant_list = json.loads(st.secrets["VANTAGE_TENANTS"])
+    for item in tenant_list:
+        if item['tenant_name']==tenant:
+           accessToken = login_vantage(item['tenant_name'], item["tenant_id"], item["user"], item["pwd"], item["client_id"], item["client_secret"], False) 
+           break
+    if accessToken.startswith("Bearer"):
+        all_data = []
+        current_start = start_date
+        while current_start < end_date:
+            current_end = current_start + datetime.timedelta(days=step_days)
+            if current_end > end_date:
+                current_end = end_date
+            df = get_transaction_data(accessToken, current_start, current_end)
+            if df.shape[0]>0:
+                all_data.append(df)
+            #get_data(current_start, current_end)
+            current_start = current_end
+        if all_data!=[]:
+            final_df = pd.concat(all_data,ignore_index=True)
+            return final_df
+    return None
 st.set_page_config(layout="wide")
 
 if 'token' not in st.session_state:
@@ -266,9 +302,9 @@ st.write("Author: marcelo.araujo@abbyy.com")
 
 if  st.session_state["token"] != "":
 
-    conn_tab, cons_tab, lic_tab, user_tab = st.tabs(["Connections", "Consumption", "Subscription", "User"])
+    conn_tab, cons_tab, lic_tab, user_tab, trans_tb = st.tabs(["Connections", "License Consumption", "Subscription Data", "Users Report", "Transaction History"])
 
-    with conn_tab:
+    with conn_tab: 
         tenants = st.secrets["VANTAGE_TENANTS"]   
         lic_data, usr_data, cons_data = get_data(tenants)
         cons_df = read_data_cons(cons_data)
@@ -276,7 +312,7 @@ if  st.session_state["token"] != "":
         lic_df = read_data_lic(lic_data)
         usr_df = read_data_usr(usr_data)
 
-    with cons_tab:  
+    with cons_tab: 
  
         st.header("Consumption by Tenant last 14 Days")
         df_cons_tenant = cons_df.groupby(["tenant_name"]).agg({'page':sum, 'doc':sum}).reset_index()
@@ -307,8 +343,7 @@ if  st.session_state["token"] != "":
         cons_df.columns = ["Tenant", "Transaction", "Created", "Skill Name", "Pages Used", "Document"]
         st.dataframe(cons_df, hide_index=True, use_container_width=True)
         
-
-    with lic_tab:        
+    with lic_tab:  
 
         st.header("Licenses by Skill")
         df_totals_tenant = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
@@ -344,7 +379,7 @@ if  st.session_state["token"] != "":
         st.markdown('<span style="color: red;">(*) Less than 1000 pages left</span>',unsafe_allow_html=True)
         st.header("")
 
-    with user_tab:         # Users by Tenant Dash
+    with user_tab: 
 
         st.header("Users by Tenant")
         df_user_tenant = usr_df.drop_duplicates(subset='email')
@@ -376,5 +411,66 @@ if  st.session_state["token"] != "":
         usr_df.columns = ["Tenant", "User Name", "E-mail", "Role"]
         st.dataframe(usr_df, hide_index=True,use_container_width=True)
         
+    with trans_tb:
 
+        c1,c2,c3,c4 = st.columns(4)
+        with c1:
+            tenant_trans = st.selectbox("Tenant for Report", get_tenant_names())
+        with c2:
+            start_date = st.date_input(label="Start Date", value=datetime.date.today() - datetime.timedelta(3), min_value=datetime.date.today() - datetime.timedelta(365), max_value=datetime.date.today() )
+        with c3:
+            end_date = st.date_input(label="End Date", value=datetime.date.today(), min_value=datetime.date.today() - datetime.timedelta(365), max_value=datetime.date.today())
+        with c4:
+            step_days = st.slider("Split requests in N Days", min_value=1, max_value=30, step=1, value=3, help="The request will be splited N times based on step value")
+        
+        with st.spinner('Getting transaction history...  Patience, it may take several minutes!!!'):
+            final_df = get_transactions(tenant_trans, start_date, end_date, step_days)
+
+        if final_df is None:
+            st.write("No transactions founded to selected period. ")
+        else:
+            transactions_df = final_df[final_df['StepName'] == "Input"]
+            transactions_df['StartedUtc'] = pd.to_datetime(transactions_df['StartedUtc'], format='%m/%d/%Y %H:%M:%S')
+            transactions_df["Date"] = transactions_df['StartedUtc'].dt.strftime("%Y-%m")#to_period('M')
+            
+            months = relativedelta(end_date, start_date).months + (relativedelta(end_date, start_date).years * 12) +1
+            total_trans = transactions_df.shape[0]
+            trans_by_months = round(total_trans / months)
+            skills_used =  transactions_df['SkillName'].nunique()
+            stp_df = transactions_df[transactions_df['ManualReviewOperatorName'] != ""]
+            transactions_with_mr = stp_df['TransactionId'].nunique()
+            stp_average = str(  "{:.2f}".format( 100 - (transactions_with_mr * 100) / total_trans) ) +"%"
+            st.header("Performance Measures") 
+            m1,m2,m3,m4 = st.columns(4)
+            with m1:
+                st.metric("Total Transactions", total_trans)
+            with m2:
+                st.metric("Average Transactions Month", trans_by_months)
+            with m3:
+                st.metric("Used SKills", skills_used)
+            with m4:
+                st.metric("STP Average", stp_average)
+
+            st.header("Transactions by Month")
+            tmcol1, tmcol2 = st.columns([0.3,0.7])
+            with tmcol1:
+                transactions_date_df = transactions_df.groupby(["Date"]).size().reset_index(name="count")
+                transactions_date_df = transactions_date_df.sort_values(by=["Date"], ascending=True)
+                st.dataframe(transactions_date_df, hide_index=True)
+            with tmcol2:
+                st.bar_chart(transactions_date_df, x="Date", y="count")
+            
+            st.header("Transactions by Skill")
+            tscol1, tscol2 = st.columns([0.3,0.7])
+            with tscol1:
+                transactions_skill_df = transactions_df.groupby([ "SkillName"]).size().reset_index(name="count")
+                transactions_skill_df = transactions_skill_df.sort_values(by=["count"], ascending=False)
+                st.dataframe(transactions_skill_df, hide_index=True)
+            with tscol2:
+                st.bar_chart(transactions_skill_df, x="SkillName", y="count")
+        
+            st.header("Transactions Data")
+            restricted = ["SkillName", "TransactionId", "StepName", "StepType", "ManualReviewOperatorName", "ManualReviewOperatorEmail", "StartedUtc", "CompletedUtc", "Duration", "document_SourceFileName" ]
+            df_restricted = final_df[restricted]
+            st.dataframe(df_restricted, hide_index=True,use_container_width=True)
 

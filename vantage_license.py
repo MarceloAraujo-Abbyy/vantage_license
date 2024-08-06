@@ -5,6 +5,7 @@ import pandas as pd
 import datetime
 import json
 import requests
+import numpy as np
 from io import StringIO
 from dateutil.relativedelta import relativedelta
 
@@ -285,6 +286,8 @@ if 'token' not in st.session_state:
     st.session_state['token'] = ""
 if 'status' not in st.session_state:
     st.session_state['status'] = "🟠 Disconnected "
+if 'avg_pages' not in st.session_state:
+    st.session_state['avg_pages'] = "1"
 
 with st.sidebar:
     st.image("abbyy.png")
@@ -314,6 +317,27 @@ if  st.session_state["token"] != "":
 
     with cons_tab: 
  
+        total_trans = cons_df.shape[0]
+        total_pages =  cons_df['page'].sum()
+        total_docs =  cons_df['doc'].sum()
+        value_counts = cons_df['page'].value_counts()
+        values = value_counts.index.to_numpy()
+        weights = value_counts.to_numpy()
+        pages_average = np.average(values, weights=weights)
+        st.session_state['avg_pages'] = pages_average
+
+        st.header("Performance Measures") 
+        cm1,cm2,cm3,cm4 = st.columns(4)
+        with cm1:
+            st.metric("Total Transactions", total_trans, help="Total of transactions last 14 days.")
+        with cm2:
+            st.metric("Total Documents", total_docs, help="Total of documents processed last 14 days.")
+        with cm3:
+            st.metric("Total Pages", total_pages, help="Total of documents processed last 14 days.")
+        with cm4:
+            st.metric("Average Pages by Transaction", "{:.2f}".format(pages_average), help="Weighted Average of the number of pages processed by the transactions during the last 14 days. " )
+            
+
         st.header("Consumption by Tenant last 14 Days")
         df_cons_tenant = cons_df.groupby(["tenant_name"]).agg({'page':sum, 'doc':sum}).reset_index()
         df_cons_tenant.columns = ["Tenant",  "Pages Used", "Documents"]
@@ -385,7 +409,7 @@ if  st.session_state["token"] != "":
         df_user_tenant = usr_df.drop_duplicates(subset='email')
         df_user_tenant = df_user_tenant.groupby("tenant")['email'].count().reset_index()
         df_user_tenant.columns = ["Tenant", "Users Count"]
-        ucol1, ucol2 = st.columns(2)
+        ucol1, ucol2 = st.columns([0.3,0.7])
         with ucol1:
             st.dataframe(df_user_tenant, hide_index=True)
         with ucol2:
@@ -400,7 +424,7 @@ if  st.session_state["token"] != "":
         for tenant in tenants:
             st.write("Tenant: " + tenant)
             tenant_df = df_roles_tenant[df_roles_tenant['Tenant'] == tenant]
-            rcol1, rcol2 = st.columns(2)
+            rcol1, rcol2 = st.columns([0.4,0.6])
             with rcol1:
                 st.dataframe(tenant_df, hide_index=True)
             with rcol2:
@@ -423,7 +447,7 @@ if  st.session_state["token"] != "":
         with c4:
             step_days = st.slider("Split requests in N Days", min_value=1, max_value=30, step=1, value=3, help="The request will be splited N times based on step value")
         
-        with st.spinner('Getting transaction history...  Patience, it may take several minutes!!!'):
+        with st.spinner('Be patient, it may take several minutes!!!'):
             final_df = get_transactions(tenant_trans, start_date, end_date, step_days)
 
         if final_df is None:
@@ -435,6 +459,7 @@ if  st.session_state["token"] != "":
             
             months = relativedelta(end_date, start_date).months + (relativedelta(end_date, start_date).years * 12) +1
             total_trans = transactions_df.shape[0]
+            estimate_pages = round(total_trans * st.session_state['avg_pages'])
             trans_by_months = round(total_trans / months)
             skills_used =  transactions_df['SkillName'].nunique()
             stp_df = transactions_df[transactions_df['ManualReviewOperatorName'] != ""]
@@ -443,13 +468,13 @@ if  st.session_state["token"] != "":
             st.header("Performance Measures") 
             m1,m2,m3,m4 = st.columns(4)
             with m1:
-                st.metric("Total Transactions", total_trans)
+                st.metric("Total Transactions", total_trans, help="Total of transactions during the period.")
             with m2:
-                st.metric("Average Transactions Month", trans_by_months)
+                st.metric("Average Transactions Month", trans_by_months, help="Average of transactions by month during the period.")
             with m3:
-                st.metric("Used SKills", skills_used)
+                st.metric("Estimated Pages (*)", estimate_pages, help="Estimated number of pages consumed based on average consumption over the last 14 days")
             with m4:
-                st.metric("STP Average", stp_average)
+                st.metric("STP Average", stp_average, help="STP - Straight-through processing means transactions with out Manual Review Step")
 
             st.header("Transactions by Month")
             tmcol1, tmcol2 = st.columns([0.3,0.7])

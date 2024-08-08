@@ -273,6 +273,9 @@ def get_transaction_data(accessToken, start_date, end_date):
         print("Erro ao acessar a API")
         return None
 
+def get_avg_pages_tenant(tenant):
+    return st.session_state['tenant_avg_pages'].get(tenant, 1)
+
 @st.cache_data
 def get_transactions(tenant, start_date, end_date, step_days):
     tenant_list = json.loads(st.secrets["VANTAGE_TENANTS"])
@@ -302,8 +305,8 @@ if 'token' not in st.session_state:
     st.session_state['token'] = ""
 if 'status' not in st.session_state:
     st.session_state['status'] = "🟠 Disconnected "
-if 'avg_pages' not in st.session_state:
-    st.session_state['avg_pages'] = "1"
+if 'tenant_avg_pages' not in st.session_state:
+    st.session_state['tenant_avg_pages'] = ""
 
 with st.sidebar:
     st.image("abbyy.png")
@@ -340,7 +343,7 @@ if  st.session_state["token"] != "":
         values = value_counts.index.to_numpy()
         weights = value_counts.to_numpy()
         pages_average = np.average(values, weights=weights)
-        st.session_state['avg_pages'] = pages_average
+        st.session_state['tenant_avg_pages'] = pages_average
 
         st.header("Performance Measures") 
         cm1,cm2,cm3,cm4 = st.columns(4)
@@ -357,7 +360,13 @@ if  st.session_state["token"] != "":
         st.header("Consumption by Tenant last 14 Days")
         df_cons_tenant = cons_df.groupby(["tenant_name"]).agg(transaction=('transaction', 'count'),page=('page','sum'),doc=('doc','sum')).reset_index()
         df_cons_tenant.columns = ["Tenant", "Transactions", "Pages Used", "Documents"]
+        df_cons_tenant['Average Pages Transac'] = (df_cons_tenant['Pages Used'] / df_cons_tenant['Transactions'])
+        df_cons_tenant['Average Pages Transac'] = df_cons_tenant['Average Pages Transac'].round(2)
         df_cons_tenant = df_cons_tenant.sort_values(by=["Tenant"], ascending=True)
+
+        skill_avg_pages_dict = df_cons_tenant.groupby('Tenant')['Average Pages Transac'].mean().round(2).to_dict()
+        st.session_state['tenant_avg_pages'] = skill_avg_pages_dict
+
         ctcol1, ctcol2 = st.columns(2)
         with ctcol1:
             st.dataframe(df_cons_tenant, hide_index=True)
@@ -475,7 +484,8 @@ if  st.session_state["token"] != "":
             
             months = relativedelta(end_date, start_date).months + (relativedelta(end_date, start_date).years * 12) +1
             total_trans = transactions_df.shape[0]
-            estimate_pages = round(total_trans * st.session_state['avg_pages'])
+            avg_pages_tenant = get_avg_pages_tenant(tenant_trans)
+            estimate_pages = round(total_trans * avg_pages_tenant)
             trans_by_months = round(total_trans / months)
             skills_used =  transactions_df['SkillName'].nunique()
             stp_df = transactions_df[transactions_df['ManualReviewOperatorName'] != ""]

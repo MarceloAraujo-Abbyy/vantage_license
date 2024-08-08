@@ -43,9 +43,11 @@ def getSkillName(skill,tenant_name):
                 headers = {'Authorization': accessToken, 'Accept': '*/*'}
                 payload = {}
                 response = requests.request("GET", url, headers=headers, data=payload)
-                obj = json.loads(response.text)
-                print(obj['name'])
-                return obj['name']
+                if response.status_code == 200:
+                    obj = json.loads(response.text)
+                    return obj['name']
+                else:
+                    return skill
 
 @st.cache_data            
 def replaceSkillName(df):
@@ -81,9 +83,9 @@ def read_data_cons(json_cons):
     skills = []
     pages = []
     docs = []
-    for data in data_list:
-            tenant_name = data['tenant']
-            for item in data['data']['items']:
+    for tenant_data in data_list:
+            tenant_name = tenant_data['tenant']
+            for item in tenant_data['data']:
                 transaction= item["transactionId"]
                 created= item["createTimeUtc"]
                 skill= item["skillId"]
@@ -208,13 +210,27 @@ def get_data(tenants):
             response = requests.request("GET", url, headers=headers, data=payload)
             obj = json.loads(response.text)
             usr_data.append({"tenant": item["tenant_name"], "data": obj})
-            #read completed transactions
-            url = "https://vantage-us.abbyy.com/api/publicapi/v1/transactions/completed?Offset=0&Limit=1000"
-            headers = {'Authorization': accessToken, 'Accept': '*/*'}
-            payload = {}
-            response = requests.request("GET", url, headers=headers, data=payload)
-            obj = json.loads(response.text)
-            cons_data.append({"tenant": item["tenant_name"], "data": obj})
+            #read completed transactions loop using Limit and offset
+            all_items = []
+            offset = 0
+            limit = 1000
+            total_items_retrieved = 0
+            while True:
+                url = "https://vantage-us.abbyy.com/api/publicapi/v1/transactions/completed?offset="+str(offset)+"&Limit="+str(limit)
+                headers = {'Authorization': accessToken, 'Accept': '*/*'}
+                payload = {}
+                response = requests.request("GET", url, headers=headers, data=payload)
+                if response.status_code != 200:
+                    break
+                obj = response.json()
+                items = obj.get('items',[])
+                all_items.extend(items)
+                total_items_retrieved += len(items)
+                total_item_count = obj.get('totalItemCount', 0)
+                if total_items_retrieved >= total_item_count:
+                    break
+                offset += limit
+            cons_data.append({"tenant": item["tenant_name"], "data": all_items})
 
     json_lic = json.dumps(lic_data)
     json_usr = json.dumps(usr_data)
@@ -339,8 +355,8 @@ if  st.session_state["token"] != "":
             
 
         st.header("Consumption by Tenant last 14 Days")
-        df_cons_tenant = cons_df.groupby(["tenant_name"]).agg({'page':sum, 'doc':sum}).reset_index()
-        df_cons_tenant.columns = ["Tenant",  "Pages Used", "Documents"]
+        df_cons_tenant = cons_df.groupby(["tenant_name"]).agg(transaction=('transaction', 'count'),page=('page','sum'),doc=('doc','sum')).reset_index()
+        df_cons_tenant.columns = ["Tenant", "Transactions", "Pages Used", "Documents"]
         df_cons_tenant = df_cons_tenant.sort_values(by=["Tenant"], ascending=True)
         ctcol1, ctcol2 = st.columns(2)
         with ctcol1:
@@ -349,8 +365,8 @@ if  st.session_state["token"] != "":
             st.bar_chart(df_cons_tenant, x=("Tenant"), y=("Pages Used", "Documents"), stack=False)
 
         st.header("Consumption by Skill last 14 Days")
-        df_cons_skill = cons_df.groupby(["tenant_name","skill_name"]).agg({'page':sum, 'doc':sum}).reset_index()
-        df_cons_skill.columns = ["Tenant", "Skill Name", "Pages Used", "Documents"]
+        df_cons_skill = cons_df.groupby(["tenant_name","skill_name"]).agg(transaction=('transaction', 'count'),page=('page','sum'),doc=('doc','sum')).reset_index()
+        df_cons_skill.columns = ["Tenant", "Skill Name", "Transactions", "Pages Used", "Documents"]
         df_cons_skill = df_cons_skill.sort_values(by=["Tenant", "Pages Used"], ascending=False)
         
         tenants = df_cons_skill['Tenant'].unique()

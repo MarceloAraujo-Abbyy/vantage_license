@@ -14,7 +14,7 @@ from dateutil.relativedelta import relativedelta
 # Login Vantage
 def login_vantage(tenant_name,tenant_id,username,password,client_id,client_secret,register):
     if username != "" and password != "":
-        url = st.secrets["VANTAGE_BASE_URL"] + tenant_id + "/connect/token"
+        url = st.secrets["VANTAGE_BASE_URL"] + "auth2/" + tenant_id + "/connect/token"
         payload = 'grant_type=password&scope=openid permissions global.wildcard&username='+username+'&password='+password+'&client_id='+client_id+'&client_secret='+client_secret
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         response = requests.request("POST", url, headers=headers, data=payload)

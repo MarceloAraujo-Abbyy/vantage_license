@@ -18,4 +18,5 @@ You'll need to set up your ABBYY Vantage tenants information you want to manager
 When create your streamlit app, set the secrets with the according information: 
 
 ```python
-VANTAGE_TENANTS = "[ {tenant_name: "", user: "", pwd: "", client_id: "", client_secret: "" }, ... ]" 
+VANTAGE_BASE_URL = 'https://vantage-us.abbyy.com/'
+VANTAGE_TENANTS = '[ {"tenant_name": "", "tenant_id": "", "user": "", "pwd": "", "client_id": "", "client_secret": "" }, ... ]'

@@ -9,12 +9,12 @@ import numpy as np
 from io import StringIO
 from dateutil.relativedelta import relativedelta
 
-###  streamlit run C:\Users\marceloraraujo\Documents\vantage_license\vantage-license\vantage_license.py
+###   streamlit run C:\Users\marceloraraujo\Documents\vantage_license\vantage-license\vantage_license.py
 
 # Login Vantage
 def login_vantage(tenant_name,tenant_id,username,password,client_id,client_secret,register):
     if username != "" and password != "":
-        url = "https://vantage-us.abbyy.com/auth2/"+tenant_id+"/connect/token"
+        url = st.secrets["VANTAGE_BASE_URL"] + tenant_id + "/connect/token"
         payload = 'grant_type=password&scope=openid permissions global.wildcard&username='+username+'&password='+password+'&client_id='+client_id+'&client_secret='+client_secret
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         response = requests.request("POST", url, headers=headers, data=payload)
@@ -39,7 +39,7 @@ def getSkillName(skill,tenant_name):
         if tenant['tenant_name'] == tenant_name:
             accessToken = login_vantage(tenant['tenant_name'], tenant["tenant_id"], tenant["user"], tenant["pwd"], tenant["client_id"], tenant["client_secret"], False)       
             if accessToken.startswith("Bearer"):
-                url = "https://vantage-us.abbyy.com/api/publicapi/v1/skills/"+skill
+                url = st.secrets["VANTAGE_BASE_URL"] + "api/publicapi/v1/skills/"+skill
                 headers = {'Authorization': accessToken, 'Accept': '*/*'}
                 payload = {}
                 response = requests.request("GET", url, headers=headers, data=payload)
@@ -197,14 +197,14 @@ def get_data(tenants):
         accessToken = login_vantage(item['tenant_name'], item["tenant_id"], item["user"], item["pwd"], item["client_id"], item["client_secret"], True)
         if accessToken.startswith("Bearer"):
             #read license
-            url = "https://vantage-us.abbyy.com/api/workspace/subscriptions/me"
+            url = st.secrets["VANTAGE_BASE_URL"] + "api/workspace/subscriptions/me"
             headers = {'Authorization': accessToken, 'Accept': '*/*'}
             payload = {}
             response = requests.request("GET", url, headers=headers, data=payload)
             obj = json.loads(response.text)
             lic_data.append({"tenant": item["tenant_name"], "data": obj})
             #read users
-            url = "https://vantage-us.abbyy.com/api/adminapi2/v1/tenants/"+item["tenant_id"]+"/users?includeRoles=true"
+            url = st.secrets["VANTAGE_BASE_URL"] + "api/adminapi2/v1/tenants/"+item["tenant_id"]+"/users?includeRoles=true"
             headers = {'Authorization': accessToken, 'Accept': '*/*'}
             payload = {}
             response = requests.request("GET", url, headers=headers, data=payload)
@@ -216,7 +216,7 @@ def get_data(tenants):
             limit = 1000
             total_items_retrieved = 0
             while True:
-                url = "https://vantage-us.abbyy.com/api/publicapi/v1/transactions/completed?offset="+str(offset)+"&Limit="+str(limit)
+                url = st.secrets["VANTAGE_BASE_URL"] + "api/publicapi/v1/transactions/completed?offset="+str(offset)+"&Limit="+str(limit)
                 headers = {'Authorization': accessToken, 'Accept': '*/*'}
                 payload = {}
                 response = requests.request("GET", url, headers=headers, data=payload)
@@ -261,7 +261,7 @@ def get_tenant_data(tenant):
     return tenant_id, client_id, client_secret
 
 def get_transaction_data(accessToken, start_date, end_date):
-    url = "https://vantage-us.abbyy.com/api/reporting/v1/transaction-steps?startDate="+start_date.strftime('%Y-%m-%dT%H:%M:%S')+"&endDate="+end_date.strftime('%Y-%m-%dT%H:%M:%S')
+    url = st.secrets["VANTAGE_BASE_URL"] + "api/reporting/v1/transaction-steps?startDate="+start_date.strftime('%Y-%m-%dT%H:%M:%S')+"&endDate="+end_date.strftime('%Y-%m-%dT%H:%M:%S')
     headers = {'Authorization': accessToken, 'Accept': '*/*'}
     payload = {}
     response = requests.request("GET", url, headers=headers, data=payload)

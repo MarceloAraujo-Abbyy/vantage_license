@@ -271,7 +271,9 @@ def get_transaction_data(accessToken, start_date, end_date):
         return df
     else:
         print("Erro ao acessar a API")
-        return None
+        data=[]
+        df =pd.DataFrame(data)
+        return df
 
 def get_avg_pages_tenant(tenant):
     return st.session_state['tenant_avg_pages'].get(tenant, 1)

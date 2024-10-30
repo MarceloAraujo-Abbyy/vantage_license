@@ -2,12 +2,16 @@
 
 import streamlit as st
 import pandas as pd
-import datetime
 import json
 import requests
 import numpy as np
+import datetime
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime
 from io import StringIO
 from dateutil.relativedelta import relativedelta
+
 
 ###   streamlit run C:\Users\marceloraraujo\Documents\vantage_license\vantage-license\vantage_license.py
 
@@ -32,12 +36,23 @@ def login_vantage(tenant_name,tenant_id,username,password,client_id,client_secre
             if register==True:
                 st.markdown(st.session_state['status'], unsafe_allow_html=True)
             return("Error to login!")
+        
+def login_vantage_client(tenant_id,client_id,client_secret):
 
-def getSkillName(skill,tenant_name):
+    url = st.secrets["VANTAGE_BASE_URL"] + "auth2/" + tenant_id + "/connect/token"
+    payload = 'grant_type=client_credentials&scope=openid permissions global.wildcard&client_id='+client_id+'&client_secret='+client_secret
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    response = requests.request("POST", url, headers=headers, data=payload)
+    obj = json.loads(response.text)
+    accessToken = "Bearer " + str(obj["access_token"])
+    return(accessToken)
+
+def get_skill_name(skill,tenant_name):
     tenant_list = json.loads(tenants)
     for tenant in tenant_list:
         if tenant['tenant_name'] == tenant_name:
-            accessToken = login_vantage(tenant['tenant_name'], tenant["tenant_id"], tenant["user"], tenant["pwd"], tenant["client_id"], tenant["client_secret"], False)       
+            #accessToken = login_vantage(tenant['tenant_name'], tenant["tenant_id"], tenant["user"], tenant["pwd"], tenant["client_id"], tenant["client_secret"], False)       
+            accessToken = login_vantage_client( tenant["tenant_id"],  tenant["client_id"], tenant["client_secret"])       
             if accessToken.startswith("Bearer"):
                 url = st.secrets["VANTAGE_BASE_URL"] + "api/publicapi/v1/skills/"+skill
                 headers = {'Authorization': accessToken, 'Accept': '*/*'}
@@ -49,6 +64,19 @@ def getSkillName(skill,tenant_name):
                 else:
                     return skill
 
+def get_skill_id(skill_name,tenant_name):
+    tenant_id, client_id, client_secret = get_tenant_data(tenant_name)
+    accessToken = login_vantage_client(tenant_id, client_id, client_secret)       
+    url = st.secrets["VANTAGE_BASE_URL"] + "api/publicapi/v1/skills"
+    headers = {'Authorization': accessToken, 'Accept': 'text/plain'}
+    payload = {}
+    response = requests.request("GET", url, headers=headers, data=payload)
+    if response.status_code == 200:
+        data = json.loads(response.text)
+        skill =  [item["id"] for item in data if item["name"] == skill_name]
+        print("SKILL ID: " + skill[0])
+        return skill[0]
+                    
 @st.cache_data            
 def replaceSkillName(df):
     
@@ -61,7 +89,7 @@ def replaceSkillName(df):
         if cache_key in skill_cache:
             return skill_cache[cache_key]
         
-        skill_name = getSkillName(skill_id,tenant_name)
+        skill_name = get_skill_name(skill_id,tenant_name)
         skill_cache[cache_key] = skill_name
         return skill_name
     
@@ -195,6 +223,7 @@ def get_data(tenants):
 
     for item in tenant_list:
         accessToken = login_vantage(item['tenant_name'], item["tenant_id"], item["user"], item["pwd"], item["client_id"], item["client_secret"], True)
+        #accessToken = login_vantage_client( item["tenant_id"],  item["client_id"], item["client_secret"])       
         if accessToken.startswith("Bearer"):
             #read license
             url = st.secrets["VANTAGE_BASE_URL"] + "api/workspace/subscriptions/me"
@@ -260,6 +289,17 @@ def get_tenant_data(tenant):
             break
     return tenant_id, client_id, client_secret
 
+def get_proc_skill_names(tenant_name):
+    tenant_id, client_id, client_secret = get_tenant_data(tenant_name)
+    accessToken = login_vantage_client(tenant_id,client_id,client_secret)
+    url = st.secrets["VANTAGE_BASE_URL"] + "api/publicapi/v1/skills"
+    headers = {'Authorization': accessToken, 'Accept': 'text/plain'}
+    payload = {}
+    response = requests.request("GET", url, headers=headers, data=payload)
+    data = json.loads(response.text)
+    filtered_data = [ item["name"] for item in data if item["type"] == "Process"]
+    return(filtered_data)
+
 def get_transaction_data(accessToken, start_date, end_date):
     url = st.secrets["VANTAGE_BASE_URL"] + "api/reporting/v1/transaction-steps?startDate="+start_date.strftime('%Y-%m-%dT%H:%M:%S')+"&endDate="+end_date.strftime('%Y-%m-%dT%H:%M:%S')
     headers = {'Authorization': accessToken, 'Accept': '*/*'}
@@ -267,6 +307,31 @@ def get_transaction_data(accessToken, start_date, end_date):
     response = requests.request("GET", url, headers=headers, data=payload)
     if response.status_code == 200:
         csv_data = StringIO(response.text)
+        df = pd.read_csv(csv_data)
+        return df
+    else:
+        print("Erro ao acessar a API")
+        data=[]
+        df =pd.DataFrame(data)
+        return df
+
+def get_field_data(tenant_name, process_skill_name):
+    date_14_days_ago = datetime.now() - relativedelta(days=13)
+    print(date_14_days_ago)
+    formatted_date = date_14_days_ago.strftime('%Y-%m-%dT%H:%M:%SZ')
+    process_skill_id = get_skill_id(process_skill_name, tenant_name)
+    tenant_id, client_id, client_secret = get_tenant_data(tenant_name)
+    accessToken = login_vantage_client(tenant_id, client_id, client_secret)
+    url = st.secrets["VANTAGE_BASE_URL"] + "api/reporting/v1/qa/process-skills/fields?startDate="+formatted_date+"&processSkillId="+process_skill_id
+    headers = {'Authorization': accessToken, 'Accept': '*/*'}
+    payload = {}
+    response = requests.request("GET", url, headers=headers, data=payload)
+    print("URL: "+ url)
+    print("accessToken: "+ accessToken)
+    print("response: "+ response.text)
+    if response.status_code == 200:
+        csv_data = StringIO(response.text)
+        print(response.text)
         df = pd.read_csv(csv_data)
         return df
     else:
@@ -283,13 +348,14 @@ def get_transactions(tenant, start_date, end_date, step_days):
     tenant_list = json.loads(st.secrets["VANTAGE_TENANTS"])
     for item in tenant_list:
         if item['tenant_name']==tenant:
-           accessToken = login_vantage(item['tenant_name'], item["tenant_id"], item["user"], item["pwd"], item["client_id"], item["client_secret"], False) 
+           #accessToken = login_vantage(item['tenant_name'], item["tenant_id"], item["user"], item["pwd"], item["client_id"], item["client_secret"], False) 
+           accessToken = login_vantage_client( item["tenant_id"],  item["client_id"], item["client_secret"])       
            break
     if accessToken.startswith("Bearer"):
         all_data = []
         current_start = start_date
         while current_start < end_date:
-            current_end = current_start + datetime.timedelta(days=step_days)
+            current_end = current_start + relativedelta(days=step_days)
             if current_end > end_date:
                 current_end = end_date
             df = get_transaction_data(accessToken, current_start, current_end)
@@ -301,6 +367,7 @@ def get_transactions(tenant, start_date, end_date, step_days):
             final_df = pd.concat(all_data,ignore_index=True)
             return final_df
     return None
+
 st.set_page_config(layout="wide")
 
 if 'token' not in st.session_state:
@@ -326,7 +393,7 @@ st.write("Author: marcelo.araujo@abbyy.com")
 
 if  st.session_state["token"] != "":
 
-    conn_tab, cons_tab, lic_tab, user_tab, trans_tb = st.tabs(["Connections", "License Consumption", "Subscription Data", "Users Report", "Transaction History"])
+    conn_tab, cons_tab, lic_tab, user_tab, trans_tb, field_tb = st.tabs(["Connections", "License Consumption", "Subscription Data", "Users Report", "Transaction History", "Field Accuracy"])
 
     with conn_tab: 
         tenants = st.secrets["VANTAGE_TENANTS"]   
@@ -347,7 +414,7 @@ if  st.session_state["token"] != "":
         pages_average = np.average(values, weights=weights)
         st.session_state['tenant_avg_pages'] = pages_average
 
-        st.header("Performance Measures") 
+        st.header("🎯 Performance Measures") 
         cm1,cm2,cm3,cm4 = st.columns(4)
         with cm1:
             st.metric("Total Transactions", total_trans, help="Total of transactions last 14 days.")
@@ -390,25 +457,27 @@ if  st.session_state["token"] != "":
             with cscol2:
                 st.bar_chart(tenant_df, x=("Skill Name"), y=("Pages Used", "Documents"), stack=False,  horizontal=True, x_label="Pages")
 
-        st.header("Comsumption Data")
+        st.header("Consumption Data")
         cons_df.columns = ["Tenant", "Transaction", "Created", "Skill Name", "Pages Used", "Document"]
         st.dataframe(cons_df, hide_index=True, use_container_width=True)
         
     with lic_tab:  
 
-        st.header("Licenses by Skill")
+        st.header("📈 Licenses by Skill")
         df_totals_tenant = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
         df_totals_tenant.columns = ["Tenant", "Type", "Pages Used", "Page Limit", "Pages Left"]
         df_totals_tenant = df_totals_tenant.sort_values(by=["Tenant",'Type'], ascending=True)
         tcol1, tcol2 = st.columns(2)
         with tcol1:
+            st.caption("Real-time information from the subscription page.")
             st.dataframe(df_totals_tenant, hide_index=True)
         with tcol2:
             st.bar_chart(df_totals_tenant, x=("Type"), y=("Pages Used","Pages Left"))
+            
 
         # Licenses by Tenant Dash
-        st.header("Licenses by Tenant")
-
+        st.header("📈 Licenses by Tenant")
+        st.caption("Real-time information from the subscription page.")
         df_totals = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
         df_totals.columns = ["Tenant", "Type", "Pages Used", "Page Limit", "Pages Left"]
         df_totals = df_totals.sort_values(by="Pages Used", ascending=True)
@@ -432,7 +501,8 @@ if  st.session_state["token"] != "":
 
     with user_tab: 
 
-        st.header("Users by Tenant")
+        st.header("🙋🏻‍♂️ Users by Tenant")
+        st.caption("Total number of users.")
         df_user_tenant = usr_df.drop_duplicates(subset='email')
         df_user_tenant = df_user_tenant.groupby("tenant")['email'].count().reset_index()
         df_user_tenant.columns = ["Tenant", "Users Count"]
@@ -443,7 +513,8 @@ if  st.session_state["token"] != "":
             st.bar_chart(df_user_tenant, x="Tenant", y="Users Count")
 
         # Users by Roles Dash
-        st.header("Users by Roles")
+        st.header("🙋🏻‍♂️ Users by Roles")
+        st.caption("Total number of users by Roles.")
         df_roles_tenant = usr_df.groupby(["tenant", "role"]).agg({'email': 'count'}).reset_index().rename(columns={"email":"count"})
         df_roles_tenant.columns = ["Tenant", "Role" ,"Users Count"]
         
@@ -468,13 +539,13 @@ if  st.session_state["token"] != "":
         with c1:
             tenant_trans = st.selectbox("Tenant for Report", get_tenant_names())
         with c2:
-            start_date = st.date_input(label="Start Date", value=datetime.date.today() - datetime.timedelta(3), min_value=datetime.date.today() - datetime.timedelta(365), max_value=datetime.date.today() )
+            start_date = st.date_input(label="Start Date", value=datetime.today() - relativedelta(days=5), min_value=datetime.today() - relativedelta(days=365), max_value=datetime.today() )
         with c3:
-            end_date = st.date_input(label="End Date", value=datetime.date.today(), min_value=datetime.date.today() - datetime.timedelta(365), max_value=datetime.date.today())
+            end_date = st.date_input(label="End Date", value=datetime.today(), min_value=datetime.today() - relativedelta(days=365), max_value=datetime.today())
         with c4:
-            step_days = st.slider("Split requests in N Days", min_value=1, max_value=30, step=1, value=3, help="The request will be splited N times based on step value")
+            step_days = st.slider("Split requests in N Days", min_value=1, max_value=30, step=1, value=5, help="The request will be splited N times based on step value")
         
-        with st.spinner('Be patient, it may take several minutes!!!'):
+        with st.spinner('Be patient, it may take some minutes!!!'):
             final_df = get_transactions(tenant_trans, start_date, end_date, step_days)
 
         if final_df is None:
@@ -500,7 +571,7 @@ if  st.session_state["token"] != "":
             with m2:
                 st.metric("Average Transactions Month", trans_by_months, help="Average of transactions by month during the period.")
             with m3:
-                st.metric("Estimated Pages (*)", estimate_pages, help="Estimated number of pages consumed based on average consumption over the last 14 days")
+                st.metric("Estimated Number of Pages (*)", estimate_pages, help="Estimated number of pages consumed based on average consumption over the last 14 days")
             with m4:
                 st.metric("STP Average", stp_average, help="STP - Straight-through processing means transactions with out Manual Review Step")
 
@@ -527,3 +598,103 @@ if  st.session_state["token"] != "":
             df_restricted = final_df[restricted]
             st.dataframe(df_restricted, hide_index=True,use_container_width=True)
 
+    with field_tb:
+         
+        f1,f2,f3,f4 = st.columns(4)
+        
+        with f1:
+            tenant_field = st.selectbox("Tenant for Accuracy Report", get_tenant_names())
+        with f2:
+            process_skill_field = st.selectbox("Skill for Accuracy Report", get_proc_skill_names(tenant_field))
+   
+        with st.spinner('Be patient, it may take some minutes!!!'):
+            fields_df = get_field_data(tenant_field, process_skill_field)
+
+        if fields_df.empty:
+            st.warning("📌There is no data for this process skill. Please select another one with processing in the las 14 days.")
+        else:
+            st.write("")
+            fg1,fg2 = st.columns(2)
+            with fg1:
+                # Donut Chart for Accuracy
+                total_fields = fields_df.shape[0]
+                correct_fields = fields_df[fields_df['Correct'] == True].shape[0]
+                accuracy_percentage = (correct_fields / total_fields) * 100
+                st.subheader(f"🎯 Overall Field Accuracy: {accuracy_percentage:.2f}%")
+                st.caption("This chart shows the percentage of fields with no modification on Manual Review.")
+                fig_accuracy = go.Figure(data=[go.Pie(
+                    labels=['Correct', 'Incorrect'],
+                    values=[correct_fields, total_fields - correct_fields],
+                    hole=0.5,
+                    marker_colors=['#1f77b4', '#aec7e8']
+                )])
+                #fig_accuracy.update_layout(title_text=f"Overall Accuracy: {accuracy_percentage:.2f}%")
+                st.plotly_chart(fig_accuracy)
+                
+            with fg2:
+                # Analysis 2: Manual vs. Automatic Review Distribution
+                manual_review_counts = fields_df['HasManualReview'].value_counts(normalize=True) * 100
+                manual_review_percentage = manual_review_counts[True] if True in manual_review_counts.index else 0
+                st.subheader(f"✍️ Manual Review Distribution: {manual_review_percentage:.2f}% ")
+                st.caption("This chart shows the percentage of fields reviewed manually versus automatically. Process with Manual Review Stage.")
+                fig_review = px.bar(
+                    manual_review_counts,
+                    x=manual_review_counts.index,
+                    y=manual_review_counts.values,
+                    labels={'x': 'Manual Review', 'y': 'Percentage'},
+                    color=manual_review_counts.index,
+                    color_discrete_sequence=['#1f77b4', '#aec7e8']
+                )
+                fig_review.update_layout(yaxis_title="Percentage (%)", xaxis_title="Review Type")
+                st.plotly_chart(fig_review)
+                st.write("")
+
+            fg3,fg4 = st.columns(2)
+            with fg3:
+                # Analysis 3: Top 10 Fields Needing Training (Percentage)
+                st.subheader("🔧 Top 10 Fields Needing Training")
+                st.caption("Fields with higher correction percentages represent opportunities for training improvements.")
+                if 'Correct' in fields_df.columns and 'FieldName' in fields_df.columns:
+                    fields_corrected = fields_df[fields_df['Correct'] == False]['FieldName'].value_counts(normalize=True) * 100
+                    fig_corrected = px.bar(
+                        fields_corrected.head(10),
+                        y=fields_corrected.head(10).index,
+                        x=fields_corrected.head(10).values,
+                        orientation='h',
+                        labels={'x': 'Correction Percentage (%)', 'y': 'Field Name'},
+                        color=fields_corrected.head(10).values,
+                        color_continuous_scale="Blues"
+                    )
+                    fig_corrected.update_layout(title="Top 10 Fields Needing Training", xaxis_title="Correction Percentage (%)")
+                    st.plotly_chart(fig_corrected)
+                
+            with fg4:
+
+                # Analysis 4: Top 10 Undetected Fields (Percentage)
+                if 'NotDetected' in fields_df.columns and 'FieldName' in fields_df.columns:
+                    undetected_fields = fields_df[fields_df['NotDetected'] == True]['FieldName'].value_counts(normalize=True).head(10) * 100
+                    
+                    if not undetected_fields.empty:
+                        st.subheader("🚫 Top 10 Undetected Fields")
+                        df_undetected = undetected_fields.reset_index()
+                        df_undetected.columns = ['FieldName', 'Undetected Percentage']
+
+                        fig_undetected = px.bar(
+                            df_undetected,
+                            y='FieldName',
+                            x='Undetected Percentage',
+                            orientation='h',
+                            labels={'Undetected Percentage': 'Undetected Percentage (%)', 'FieldName': 'Field Name'},
+                            color='Undetected Percentage',
+                            color_continuous_scale="Blues"
+                        )
+                        fig_undetected.update_layout(title="Top 10 Undetected Fields", xaxis_title="Undetected Percentage (%)")
+                        st.plotly_chart(fig_undetected)
+                        st.caption("Fields with a high undetected rate may require further recognition improvements or additional training.")
+                    else:
+                        st.info("No undetected fields found.")
+                else:
+                    st.info("Undetected fields data is not available.")
+                    
+    
+            

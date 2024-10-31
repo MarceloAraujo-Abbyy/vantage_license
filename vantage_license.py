@@ -256,6 +256,7 @@ def get_data(tenants):
                 all_items.extend(items)
                 total_items_retrieved += len(items)
                 total_item_count = obj.get('totalItemCount', 0)
+                print("total_items_retrieved:" + str(total_items_retrieved) + " - total_item_count:" + str(total_item_count))
                 if total_items_retrieved >= total_item_count:
                     break
                 offset += limit
@@ -411,6 +412,9 @@ if  st.session_state["token"] != "":
         value_counts = cons_df['page'].value_counts()
         values = value_counts.index.to_numpy()
         weights = value_counts.to_numpy()
+        print("values " + str(values))
+        print("weights " + str(weights))
+        
         pages_average = np.average(values, weights=weights)
         st.session_state['tenant_avg_pages'] = pages_average
 
@@ -463,7 +467,7 @@ if  st.session_state["token"] != "":
         
     with lic_tab:  
 
-        st.header("📈 Licenses by Skill")
+        st.header("📈 Licenses by Type")
         df_totals_tenant = lic_df.groupby(["tenant_name",'skills_type']).agg({'skills_counter':sum, 'skills_limit':sum, 'skills_remain': sum}).reset_index()
         df_totals_tenant.columns = ["Tenant", "Type", "Pages Used", "Page Limit", "Pages Left"]
         df_totals_tenant = df_totals_tenant.sort_values(by=["Tenant",'Type'], ascending=True)
@@ -564,7 +568,7 @@ if  st.session_state["token"] != "":
             stp_df = transactions_df[transactions_df['ManualReviewOperatorName'] != ""]
             transactions_with_mr = stp_df['TransactionId'].nunique()
             stp_average = str(  "{:.2f}".format( 100 - (transactions_with_mr * 100) / total_trans) ) +"%"
-            st.header("Performance Measures") 
+            st.header("🎯 Performance Measures") 
             m1,m2,m3,m4 = st.columns(4)
             with m1:
                 st.metric("Total Transactions", total_trans, help="Total of transactions during the period.")
@@ -600,7 +604,7 @@ if  st.session_state["token"] != "":
 
     with field_tb:
          
-        f1,f2,f3,f4 = st.columns(4)
+        f1,f2,f3 = st.columns(3)
         
         with f1:
             tenant_field = st.selectbox("Tenant for Accuracy Report", get_tenant_names())
@@ -614,6 +618,7 @@ if  st.session_state["token"] != "":
             st.warning("📌There is no data for this process skill. Please select another one with processing in the las 14 days.")
         else:
             st.write("")
+            st.caption("The data below is based only on the last 14 days.")
             fg1,fg2 = st.columns(2)
             with fg1:
                 # Donut Chart for Accuracy
@@ -676,6 +681,7 @@ if  st.session_state["token"] != "":
                     
                     if not undetected_fields.empty:
                         st.subheader("🚫 Top 10 Undetected Fields")
+                        st.caption("Fields with a high undetected rate may require further recognition improvements or additional training.")
                         df_undetected = undetected_fields.reset_index()
                         df_undetected.columns = ['FieldName', 'Undetected Percentage']
 
@@ -690,7 +696,7 @@ if  st.session_state["token"] != "":
                         )
                         fig_undetected.update_layout(title="Top 10 Undetected Fields", xaxis_title="Undetected Percentage (%)")
                         st.plotly_chart(fig_undetected)
-                        st.caption("Fields with a high undetected rate may require further recognition improvements or additional training.")
+                        
                     else:
                         st.info("No undetected fields found.")
                 else:

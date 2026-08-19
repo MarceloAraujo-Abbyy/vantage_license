@@ -226,7 +226,7 @@ def get_data(tenants):
         #accessToken = login_vantage_client( item["tenant_id"],  item["client_id"], item["client_secret"])       
         if accessToken.startswith("Bearer"):
             #read license
-            url = st.secrets["VANTAGE_BASE_URL"] + "api/workspace/subscriptions/me"
+            url = st.secrets["VANTAGE_BASE_URL"] + "api/workspace/subscriptions/me?api-version=1.0"
             headers = {'Authorization': accessToken, 'Accept': '*/*'}
             payload = {}
             response = requests.request("GET", url, headers=headers, data=payload)
